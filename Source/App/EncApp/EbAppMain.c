@@ -76,6 +76,8 @@ void AssignAppThreadGroup(uint8_t target_socket) {
 #endif
 }
 
+double get_psnr(double sse, double max);
+
 /***************************************
  * Encoder App Main
  ***************************************/
@@ -221,8 +223,14 @@ int32_t main(int32_t argc, char* argv[])
 
                 for (instanceCount = 0; instanceCount < num_channels; ++instanceCount) {
                     if (exitConditions[instanceCount] == APP_ExitConditionFinished && return_errors[instanceCount] == EB_ErrorNone) {
-                        double frame_rate;
-                        uint64_t frame_count = (uint32_t)configs[instanceCount]->performance_context.frame_count;
+                        double      frame_rate;
+                        uint64_t    frame_count = (uint32_t)configs[instanceCount]->performance_context.frame_count;
+                        uint32_t    max_luma_value = (configs[instanceCount]->encoder_bit_depth == 8) ? 255 : 1023;
+                        double      max_luma_sse = (double)max_luma_value*max_luma_value *
+                                    (configs[instanceCount]->source_width*configs[instanceCount]->source_height);
+                        double      max_chroma_sse = (double)max_luma_value*max_luma_value *
+                            (configs[instanceCount]->source_width/2*configs[instanceCount]->source_height/2);
+
                         if ((configs[instanceCount]->frame_rate_numerator != 0 && configs[instanceCount]->frame_rate_denominator != 0) || configs[instanceCount]->frame_rate != 0) {
                             if (configs[instanceCount]->frame_rate_numerator && configs[instanceCount]->frame_rate_denominator && (configs[instanceCount]->frame_rate_numerator != 0 && configs[instanceCount]->frame_rate_denominator != 0))
                                 frame_rate = ((double)configs[instanceCount]->frame_rate_numerator) / ((double)configs[instanceCount]->frame_rate_denominator);
@@ -245,10 +253,10 @@ int32_t main(int32_t argc, char* argv[])
                                         fprintf(configs[instanceCount]->stat_file, "Total Frames\tAverage QP  \tY-PSNR   \tU-PSNR   \tV-PSNR   \tBitrate\n");
                                     fprintf(configs[instanceCount]->stat_file, "%10ld  \t   %2.2f    \t%3.2f dB\t%3.2f dB\t%3.2f dB\t%.2f kbps\n",
                                          (long int)frame_count,
-                                         (float)configs[instanceCount]->performance_context.sum_qp        / frame_count,
-                                         (float)configs[instanceCount]->performance_context.sum_luma_psnr / frame_count,
-                                         (float)configs[instanceCount]->performance_context.sum_cr_psnr   / frame_count,
-                                         (float)configs[instanceCount]->performance_context.sum_cb_psnr   / frame_count,
+                                         (float)(configs[instanceCount]->performance_context.sum_qp        / frame_count),
+                                         (float)(get_psnr((configs[instanceCount]->performance_context.sum_luma_sse  / frame_count) , max_luma_sse)),
+                                         (float)(get_psnr((configs[instanceCount]->performance_context.sum_cr_sse    / frame_count) , max_chroma_sse)),
+                                         (float)(get_psnr((configs[instanceCount]->performance_context.sum_cb_sse    / frame_count) , max_chroma_sse)),
                                         ((double)(configs[instanceCount]->performance_context.byte_count << 3) * frame_rate / (configs[instanceCount]->frames_encoded * 1000)));
                                 }
                             }
@@ -272,9 +280,9 @@ int32_t main(int32_t argc, char* argv[])
                                 printf("\nAverage QP\t\tY-PSNR\t\t\tU-PSNR\t\t\tV-PSNR\t\n");
                                 printf("%11.2f\t\t%4.2f dB\t\t%8.2fdB\t\t%5.2fdB\n",
                                     (float)configs[instanceCount]->performance_context.sum_qp / frame_count,
-                                    (float)configs[instanceCount]->performance_context.sum_luma_psnr / frame_count,
-                                    (float)configs[instanceCount]->performance_context.sum_cr_psnr / frame_count,
-                                    (float)configs[instanceCount]->performance_context.sum_cb_psnr / frame_count);
+                                    (float)(get_psnr((configs[instanceCount]->performance_context.sum_luma_sse / frame_count), max_luma_sse)),
+                                    (float)(get_psnr((configs[instanceCount]->performance_context.sum_cr_sse / frame_count), max_chroma_sse)),
+                                    (float)(get_psnr((configs[instanceCount]->performance_context.sum_cb_sse / frame_count), max_chroma_sse)));
                             }
 
                             fflush(stdout);

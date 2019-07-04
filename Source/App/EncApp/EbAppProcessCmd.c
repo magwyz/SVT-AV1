@@ -1103,6 +1103,15 @@ static void write_ivf_frame_header(EbConfig *config, uint32_t byte_count){
     if (config->bitstream_file)
         fwrite(header, 1, IVF_FRAME_HEADER_SIZE, config->bitstream_file);
 }
+double get_psnr(double sse, double max){
+    double psnr = 100;
+    if (sse == 0)
+        psnr = 100;
+    else
+        psnr = 10 * log10((double)max / (double)sse);
+
+    return psnr;
+}
 
 /***************************************
 * Process Output STATISTICS Buffer
@@ -1125,28 +1134,24 @@ void process_output_statistics_buffer(
     temp_var = (double)max_luma_value*max_luma_value *
              (config->source_width*config->source_height);
 
-    if (luma_sse == 0)
-        luma_psnr = 100;
-    else
-        luma_psnr = 10 * log10((double)temp_var / (double)luma_sse);
+    luma_psnr = get_psnr((double)luma_sse, temp_var);
 
     temp_var = (double) max_luma_value * max_luma_value *
             (config->source_width / 2 * config->source_height / 2);
 
-    if (cb_sse == 0)
-        cb_psnr = 100;
-    else
-        cb_psnr = 10 * log10((double)temp_var / (double)cb_sse);
+    cb_psnr = get_psnr((double)cb_sse, temp_var);
 
-    if (cr_sse == 0)
-        cr_psnr = 100;
-    else
-        cr_psnr = 10 * log10((double)temp_var / (double)cr_sse);
+    cr_psnr = get_psnr((double)cr_sse, temp_var);
 
-    config->performance_context.sum_luma_psnr += luma_psnr;
-    config->performance_context.sum_cr_psnr   += cr_psnr;
-    config->performance_context.sum_cb_psnr   += cb_psnr;
-    config->performance_context.sum_qp        += picture_qp;
+    config->performance_context.sum_luma_psnr   += luma_psnr;
+    config->performance_context.sum_cr_psnr     += cr_psnr;
+    config->performance_context.sum_cb_psnr     += cb_psnr;
+
+    config->performance_context.sum_luma_sse    += luma_sse;
+    config->performance_context.sum_cr_sse      += cr_sse;
+    config->performance_context.sum_cb_sse      += cb_sse;
+
+    config->performance_context.sum_qp          += picture_qp;
 
     // Write statistic Data to file
     if (config->stat_file)

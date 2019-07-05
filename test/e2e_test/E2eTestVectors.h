@@ -57,18 +57,6 @@ const std::vector<TestVideoVector> default_test_vectors = {
                     480, 8, 0, 0, 60),
 };
 
-const std::vector<TestVideoVector> res_480p_test_vectors = {
-    std::make_tuple("kirland_640_480_30.yuv", YUV_VIDEO_FILE, IMG_FMT_420, 640,
-                    480, 8, 0, 0, 60),
-    std::make_tuple("screendata.y4m", Y4M_VIDEO_FILE, IMG_FMT_420, 640, 480, 8,
-                    0, 0, 0),
-};
-
-const std::vector<TestVideoVector> screen_test_vectors = {
-    std::make_tuple("screendata.y4m", Y4M_VIDEO_FILE, IMG_FMT_420, 640, 480, 8,
-                    0, 0, 0),
-};
-
 using EncSetting = std::map<std::string, std::string>;
 typedef struct EncTestSetting {
     std::string name;    // description of the test cases
@@ -101,14 +89,13 @@ typedef struct EncTestSetting {
                                     const EncTestSetting& setting) {
         return os << setting.get_setting_str();
     }
-    // used in INSTANTIATE_TEST_CASE_P to append the param info into the test
-    // name
-    static std::string GetSettingName(
-        const ::testing::TestParamInfo<EncTestSetting> setting) {
-        return setting.param.get_setting_name();
-    }
-
 } EncTestSetting;
+
+// used in INSTANTIATE_TEST_CASE_P to append the param info into the test name
+static std::string GetSettingName(
+    const ::testing::TestParamInfo<EncTestSetting> setting) {
+    return setting.param.get_setting_name();
+}
 
 /**
  * @brief      Generate test vectors from config file.

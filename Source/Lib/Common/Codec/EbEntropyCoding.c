@@ -5849,7 +5849,7 @@ assert(bsize < BlockSizeS_ALL);
     cu_ptr->av1xd->tile_ctx = frameContext;
     if (picture_control_set_ptr->slice_type == I_SLICE) {
         //const int32_t skip = write_skip(cm, xd, mbmi->segment_id, mi, w);
-        if (picture_control_set_ptr->parent_pcs_ptr->segmentation_params.segmentation_enabled && 
+        if (picture_control_set_ptr->parent_pcs_ptr->segmentation_params.segmentation_enabled &&
             picture_control_set_ptr->parent_pcs_ptr->segmentation_params.seg_id_pre_skip)
             write_segment_id(picture_control_set_ptr, frameContext, ec_writer, blk_geom->bsize, blkOriginX, blkOriginY,
                              cu_ptr,

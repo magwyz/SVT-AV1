@@ -2373,7 +2373,7 @@ void product_full_loop_tx_search(
                 context_ptr->blk_geom->txsize[tx_depth][txb_itr], //[0][0],
                 &context_ptr->luma_txb_skip_context,
                 &context_ptr->luma_dc_sign_context);
-       
+
             // Y: T Q iQ
             av1_estimate_transform(
                 &(((int16_t*)candidateBuffer->residual_ptr->buffer_y)[tu_origin_index]),

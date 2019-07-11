@@ -1075,8 +1075,8 @@ EB_API EbErrorType eb_init_encoder(EbComponentType *svt_enc_component)
         referencePictureBufferDescInitData.bit_depth = enc_handle_ptr->sequence_control_set_instance_array[instance_index]->sequence_control_set_ptr->encoder_bit_depth;
         referencePictureBufferDescInitData.color_format = EB_YUV420; //use 420 for picture analysis
         referencePictureBufferDescInitData.buffer_enable_mask = 0;
-        referencePictureBufferDescInitData.left_padding = enc_handle_ptr->sequence_control_set_instance_array[instance_index]->sequence_control_set_ptr->sb_sz + ME_FILTER_TAP;
-        referencePictureBufferDescInitData.right_padding = enc_handle_ptr->sequence_control_set_instance_array[instance_index]->sequence_control_set_ptr->sb_sz + ME_FILTER_TAP;
+        referencePictureBufferDescInitData.left_padding = enc_handle_ptr->sequence_control_set_instance_array[instance_index]->sequence_control_set_ptr->sb_sz + ALIGNED_PAD;
+        referencePictureBufferDescInitData.right_padding = enc_handle_ptr->sequence_control_set_instance_array[instance_index]->sequence_control_set_ptr->sb_sz + ALIGNED_PAD;
         referencePictureBufferDescInitData.top_padding = enc_handle_ptr->sequence_control_set_instance_array[instance_index]->sequence_control_set_ptr->sb_sz + ME_FILTER_TAP;
         referencePictureBufferDescInitData.bot_padding = enc_handle_ptr->sequence_control_set_instance_array[instance_index]->sequence_control_set_ptr->sb_sz + ME_FILTER_TAP;
         referencePictureBufferDescInitData.split_mode = EB_FALSE;
@@ -2037,9 +2037,9 @@ void SetParamBasedOnInput(SequenceControlSet *sequence_control_set_ptr)
 
     // Configure the padding
 #if !INCOMPLETE_SB_FIX
-    sequence_control_set_ptr->left_padding  = BLOCK_SIZE_64 + 4;
+    sequence_control_set_ptr->left_padding = BLOCK_SIZE_64 + ALIGNED_PAD;
     sequence_control_set_ptr->top_padding = BLOCK_SIZE_64 + 4;
-    sequence_control_set_ptr->right_padding = BLOCK_SIZE_64 + 4;
+    sequence_control_set_ptr->right_padding = BLOCK_SIZE_64 + ALIGNED_PAD;
     sequence_control_set_ptr->bot_padding = BLOCK_SIZE_64 + 4;
 #endif
 
@@ -2058,9 +2058,9 @@ void SetParamBasedOnInput(SequenceControlSet *sequence_control_set_ptr)
    // sequence_control_set_ptr->static_config.hierarchical_levels = (sequence_control_set_ptr->static_config.rate_control_mode > 1) ? 3 : sequence_control_set_ptr->static_config.hierarchical_levels;
 #if INCOMPLETE_SB_FIX
     // Configure the padding
-    sequence_control_set_ptr->left_padding = BLOCK_SIZE_64 + 4;
+    sequence_control_set_ptr->left_padding = BLOCK_SIZE_64 + ALIGNED_PAD;
     sequence_control_set_ptr->top_padding = BLOCK_SIZE_64 + 4;
-    sequence_control_set_ptr->right_padding = BLOCK_SIZE_64 + 4;
+    sequence_control_set_ptr->right_padding = BLOCK_SIZE_64 + ALIGNED_PAD;
     sequence_control_set_ptr->bot_padding = sequence_control_set_ptr->static_config.super_block_size + 4;
 #endif
     sequence_control_set_ptr->static_config.enable_overlays = sequence_control_set_ptr->static_config.enable_altrefs == EB_FALSE ||

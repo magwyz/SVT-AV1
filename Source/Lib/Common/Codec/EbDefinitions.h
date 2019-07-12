@@ -116,8 +116,8 @@ enum {
                               // FUTURE_WINDOW_WIDTH defined in EbPictureDecisionProcess.c
 #define ALTREF_MAX_STRENGTH 6
 
-#define PAD_VALUE                                (128+32)
-#define ALIGNED_PAD                               64 // At least ME_FILTER_TAP
+#define ALIGNED_PAD                               64
+#define PAD_VALUE                                (128+ALIGNED_PAD)
 
 //  Delta QP support
 #define ADD_DELTA_QP_SUPPORT                      0  // Add delta QP support - Please enable this flag and iproveSharpness (config) to test the QPM

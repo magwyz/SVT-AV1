@@ -221,37 +221,33 @@ uint8_t  circ_inc(uint8_t max, uint8_t off, uint8_t input)
 #define FC_SKIP_TX_SR_TH025                     125 // Fast cost skip tx search threshold.
 #define FC_SKIP_TX_SR_TH010                     110 // Fast cost skip tx search threshold.
 
+void picture_decision_context_dctor(EbPtr p)
+{
+    PictureDecisionContext* obj = (PictureDecisionContext*)p;
+
+    EB_FREE_2D(obj->ahd_running_avg);
+    EB_FREE_2D(obj->ahd_running_avg_cr);
+    EB_FREE_2D(obj->ahd_running_avg_cb);
+}
+
  /************************************************
   * Picture Analysis Context Constructor
   ************************************************/
 EbErrorType picture_decision_context_ctor(
-    PictureDecisionContext **context_dbl_ptr,
+    PictureDecisionContext *context_ptr,
     EbFifo *picture_analysis_results_input_fifo_ptr,
     EbFifo *picture_decision_results_output_fifo_ptr)
 {
-    PictureDecisionContext *context_ptr;
-    uint32_t arrayIndex;
     uint32_t arrayRow, arrowColumn;
-    EB_MALLOC(PictureDecisionContext*, context_ptr, sizeof(PictureDecisionContext), EB_N_PTR);
-    *context_dbl_ptr = context_ptr;
+
+    context_ptr->dctor = picture_decision_context_dctor;
 
     context_ptr->picture_analysis_results_input_fifo_ptr = picture_analysis_results_input_fifo_ptr;
     context_ptr->picture_decision_results_output_fifo_ptr = picture_decision_results_output_fifo_ptr;
 
-    EB_MALLOC(uint32_t**, context_ptr->ahd_running_avg_cb, sizeof(uint32_t*) * MAX_NUMBER_OF_REGIONS_IN_WIDTH, EB_N_PTR);
-
-    EB_MALLOC(uint32_t**, context_ptr->ahd_running_avg_cr, sizeof(uint32_t*) * MAX_NUMBER_OF_REGIONS_IN_WIDTH, EB_N_PTR);
-
-    EB_MALLOC(uint32_t**, context_ptr->ahd_running_avg, sizeof(uint32_t*) * MAX_NUMBER_OF_REGIONS_IN_WIDTH, EB_N_PTR);
-
-    for (arrayIndex = 0; arrayIndex < MAX_NUMBER_OF_REGIONS_IN_WIDTH; arrayIndex++)
-    {
-        EB_MALLOC(uint32_t*, context_ptr->ahd_running_avg_cb[arrayIndex], sizeof(uint32_t) * MAX_NUMBER_OF_REGIONS_IN_HEIGHT, EB_N_PTR);
-
-        EB_MALLOC(uint32_t*, context_ptr->ahd_running_avg_cr[arrayIndex], sizeof(uint32_t) * MAX_NUMBER_OF_REGIONS_IN_HEIGHT, EB_N_PTR);
-
-        EB_MALLOC(uint32_t*, context_ptr->ahd_running_avg[arrayIndex], sizeof(uint32_t) * MAX_NUMBER_OF_REGIONS_IN_HEIGHT, EB_N_PTR);
-    }
+    EB_MALLOC_2D(context_ptr->ahd_running_avg_cb,  MAX_NUMBER_OF_REGIONS_IN_WIDTH, MAX_NUMBER_OF_REGIONS_IN_HEIGHT);
+    EB_MALLOC_2D(context_ptr->ahd_running_avg_cr, MAX_NUMBER_OF_REGIONS_IN_WIDTH, MAX_NUMBER_OF_REGIONS_IN_HEIGHT);
+    EB_MALLOC_2D(context_ptr->ahd_running_avg, MAX_NUMBER_OF_REGIONS_IN_WIDTH, MAX_NUMBER_OF_REGIONS_IN_HEIGHT);
 
     for (arrayRow = 0; arrayRow < MAX_NUMBER_OF_REGIONS_IN_HEIGHT; arrayRow++)
     {
@@ -263,10 +259,6 @@ EbErrorType picture_decision_context_ctor(
     }
 
     context_ptr->reset_running_avg = EB_TRUE;
-
-    context_ptr->is_scene_change_detected = EB_FALSE;
-
-    context_ptr->key_poc = 0;
 
     return EB_ErrorNone;
 }
@@ -3306,11 +3298,54 @@ void* picture_decision_kernel(void *input_ptr)
                                 actual_past_pics = actual_future_pics;
                                 actual_past_pics += (altref_nframes + 1) & 0x1;
 
+#if ALTREF_TF_ADAPTIVE_WINDOW_SIZE
+                                int index_center = (uint8_t)(picture_control_set_ptr->sequence_control_set_ptr->static_config.altref_nframes / 2);
+                                int pic_itr;
+                                int ahd;
+                                uint32_t regionInPictureWidthIndex;
+                                uint32_t regionInPictureHeightIndex;
+
+                                int ahd_th = (((sequence_control_set_ptr->seq_header.max_frame_width * sequence_control_set_ptr->seq_header.max_frame_height) * AHD_TH_WEIGHT) / 100);
+
+                                // Accumulative histogram absolute differences between the central and past frame
+                                for (pic_itr = index_center - actual_past_pics; pic_itr < index_center - 1; pic_itr++) {
+                                    ahd = 0;
+                                    for (regionInPictureWidthIndex = 0; regionInPictureWidthIndex < sequence_control_set_ptr->picture_analysis_number_of_regions_per_width; regionInPictureWidthIndex++) {
+                                        for (regionInPictureHeightIndex = 0; regionInPictureHeightIndex < sequence_control_set_ptr->picture_analysis_number_of_regions_per_height; regionInPictureHeightIndex++) {
+                                            for (int bin = 0; bin < HISTOGRAM_NUMBER_OF_BINS; ++bin) {
+                                                ahd += ABS((int32_t)picture_control_set_ptr->temp_filt_pcs_list[index_center]->picture_histogram[regionInPictureWidthIndex][regionInPictureHeightIndex][0][bin] - (int32_t)picture_control_set_ptr->temp_filt_pcs_list[pic_itr]->picture_histogram[regionInPictureWidthIndex][regionInPictureHeightIndex][0][bin]);
+                                            }
+                                        }
+                                    }
+
+                                    if (ahd < ahd_th)
+                                        break;
+                                }
+                                picture_control_set_ptr->past_altref_nframes = actual_past_pics = index_center - pic_itr;
+
+
+                                // Accumulative histogram absolute differences between the central and past frame
+                                for (pic_itr = (index_center + actual_future_pics); pic_itr > index_center; pic_itr--) {
+                                    ahd = 0;
+                                    for (regionInPictureWidthIndex = 0; regionInPictureWidthIndex < sequence_control_set_ptr->picture_analysis_number_of_regions_per_width; regionInPictureWidthIndex++) {
+                                        for (regionInPictureHeightIndex = 0; regionInPictureHeightIndex < sequence_control_set_ptr->picture_analysis_number_of_regions_per_height; regionInPictureHeightIndex++) {
+                                            for (int bin = 0; bin < HISTOGRAM_NUMBER_OF_BINS; ++bin) {
+                                                ahd += ABS((int32_t)picture_control_set_ptr->temp_filt_pcs_list[index_center]->picture_histogram[regionInPictureWidthIndex][regionInPictureHeightIndex][0][bin] - (int32_t)picture_control_set_ptr->temp_filt_pcs_list[pic_itr]->picture_histogram[regionInPictureWidthIndex][regionInPictureHeightIndex][0][bin]);
+                                            }
+                                        }
+                                    }
+
+                                    if (ahd < ahd_th)
+                                        break;
+                                }
+                                picture_control_set_ptr->future_altref_nframes = pic_itr - index_center;
+                                //printf("\nPOC %d\t PAST %d\t FUTURE %d\n", picture_control_set_ptr->picture_number, picture_control_set_ptr->past_altref_nframes, picture_control_set_ptr->future_altref_nframes);
+#else
                                 //get the final number of pictures to use for the temporal filtering
                                 altref_nframes = (uint8_t)(actual_past_pics + 1 + actual_future_pics);
 
                                 picture_control_set_ptr->altref_nframes = (uint8_t)altref_nframes;
-
+#endif
                                 // adjust the temporal filtering pcs buffer to remove unused past pictures
                                 if(actual_past_pics != num_past_pics) {
 

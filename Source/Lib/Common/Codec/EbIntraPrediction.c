@@ -1032,20 +1032,23 @@ void intra_mode_angular_av1_z3_16bit(
     return;
 }
 
+void intra_open_loop_reference_samples_dctor(EbPtr p)
+{
+    IntraReferenceSamplesOpenLoop *obj = (IntraReferenceSamplesOpenLoop*)p;
+    obj->y_intra_reference_array_reverse--;
+    EB_FREE(obj->y_intra_reference_array_reverse);
+    EB_FREE(obj->y_intra_reference_array);
+}
 /**********************************************
  * Intra Reference Samples Ctor
  **********************************************/
 EbErrorType intra_open_loop_reference_samples_ctor(
-    IntraReferenceSamplesOpenLoop **context_dbl_ptr)
+    IntraReferenceSamplesOpenLoop *context_ptr)
 {
-    IntraReferenceSamplesOpenLoop *context_ptr;
-    EB_MALLOC(IntraReferenceSamplesOpenLoop*, context_ptr, sizeof(IntraReferenceSamplesOpenLoop), EB_N_PTR);
+    context_ptr->dctor = intra_open_loop_reference_samples_dctor;
+    EB_MALLOC(context_ptr->y_intra_reference_array, (4 * BLOCK_SIZE_64 + 1));
 
-    *context_dbl_ptr = context_ptr;
-
-    EB_MALLOC(uint8_t*, context_ptr->y_intra_reference_array, sizeof(uint8_t) * (4 * BLOCK_SIZE_64 + 1), EB_N_PTR);
-
-    EB_MALLOC(uint8_t*, context_ptr->y_intra_reference_array_reverse, sizeof(uint8_t) * (4 * BLOCK_SIZE_64 + 2), EB_N_PTR);
+    EB_MALLOC(context_ptr->y_intra_reference_array_reverse, (4 * BLOCK_SIZE_64 + 2));
 
     context_ptr->y_intra_reference_array_reverse++;
 
@@ -3526,10 +3529,10 @@ static void build_intra_predictors(
     int32_t ref_stride = 1;
     const uint8_t *above_ref = topNeighArray;//CHKN ref - ref_stride;
     const uint8_t *left_ref = leftNeighArray;//CHKN ref - 1;
-    DECLARE_ALIGNED(16, uint8_t, left_data[MAX_TX_SIZE * 2 + 32]);
-    DECLARE_ALIGNED(16, uint8_t, above_data[MAX_TX_SIZE * 2 + 32]);
-    uint8_t *const above_row = above_data + 16;
-    uint8_t *const left_col = left_data + 16;
+    DECLARE_ALIGNED(32, uint8_t, left_data[MAX_TX_SIZE * 2 + 48]);
+    DECLARE_ALIGNED(32, uint8_t, above_data[MAX_TX_SIZE * 2 + 48]);
+    uint8_t *const above_row = above_data + 32;
+    uint8_t *const left_col = left_data + 32;
 
     const int32_t txwpx = tx_size_wide[tx_size];
     const int32_t txhpx = tx_size_high[tx_size];

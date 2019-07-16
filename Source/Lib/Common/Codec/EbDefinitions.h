@@ -34,6 +34,28 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+/*M0 TESTS */
+
+#define M0_NEW_NEAREST      0
+#define M0_nx4_4xn          0
+#define M0_CHROMA           0
+#define M0_PRED_ME          0
+#define M0_TRELLIS          0
+#define M0_QFP              0
+#define M0_NSQ_TAB          0
+#define M0_HALF_QUARTER_PEL 0
+#define M0_LOOP_FILTER      0
+#define M0_INTRA_PRED       0
+#define M0_ATB              0
+#define M0_MD_STAGE         0
+#define M0_INCOMPLETE_SB    0
+#define M0_SB               0
+#define M0_MRP              0
+#define M0_DWN_SIMPLE       0
+#define M0_3x3_UNI          0
+#define M0_3x3_BI          0
+
+
 
 #define M0_HME_ME_TUNING                1
 #define PREDICTIVE_ME                   1 // Perform ME search around MVP 
@@ -369,10 +391,10 @@ typedef enum CAND_CLASS {
 #define  REFACTOR_FAST_LOOP           1 // Lossless
 #define  FAST_LOOP_OPT                1 // Use fast loop stages to speed up encoder
 #define  COMP_OPT                     1 // cut some compound injection/modes
-#define  BDR_MODE                     0 // enable to run for best bd rate
+#define  BDR_MODE                     1 // enable to run for best bd rate
 #if BDR_MODE
 #define  FULL_COMPOUND_BDRATE         1 // enable to run compound in full mode for best bd rate
-#define  MD_STAGE_3_NFL_BDRATE        1 // 10 NFL @ md_stage_3
+#define  MD_STAGE_3_NFL_BDRATE        0 // 10 NFL @ md_stage_3
 #endif
 
 typedef enum MD_STAGE {

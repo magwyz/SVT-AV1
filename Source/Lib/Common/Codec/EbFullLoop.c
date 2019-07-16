@@ -1983,7 +1983,8 @@ void av1_quantize_inv_quantize(
     EbBool perform_rdoq = (md_context->trellis_quant_coeff_optimization && component_type == COMPONENT_LUMA && !is_intra_bc);
 #endif 
     // Hsan: set to FALSE until adding x86 quantize_fp
-#if ENABLE_QUANT_FP
+#if ENABLE_QUANT_FP && ! M0_QFP
+
     EbBool perform_quantize_fp = picture_control_set_ptr->enc_mode == ENC_M0 ? EB_TRUE : EB_FALSE;
 #else
     EbBool perform_quantize_fp = EB_FALSE;

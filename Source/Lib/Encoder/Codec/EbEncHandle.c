@@ -2251,7 +2251,11 @@ void SetParamBasedOnInput(SequenceControlSet *sequence_control_set_ptr)
     if (sequence_control_set_ptr->static_config.screen_content_mode == 1)
         sequence_control_set_ptr->static_config.super_block_size       =  64;
     else
+#if M0_SB
+        sequence_control_set_ptr->static_config.super_block_size =  64;
+#else
         sequence_control_set_ptr->static_config.super_block_size       = (sequence_control_set_ptr->static_config.enc_mode == ENC_M0 && sequence_control_set_ptr->input_resolution >= INPUT_SIZE_1080i_RANGE) ? 128 : 64;
+#endif
 
 #else
     sequence_control_set_ptr->static_config.super_block_size       = (sequence_control_set_ptr->static_config.enc_mode == ENC_M0 && sequence_control_set_ptr->input_resolution >= INPUT_SIZE_1080i_RANGE) ? 128 : 64;
@@ -2280,7 +2284,11 @@ void SetParamBasedOnInput(SequenceControlSet *sequence_control_set_ptr)
 #if MEMORY_FOOTPRINT_OPT_ME_MV
     //0: MRP Mode 0 (4,3)
     //1: MRP Mode 1 (2,2)
+#if M0_MRP
+    sequence_control_set_ptr->mrp_mode = 1;
+#else
     sequence_control_set_ptr->mrp_mode = (uint8_t) (sequence_control_set_ptr->static_config.enc_mode == ENC_M0) ? 0 : 1;
+#endif
 
     //0: ON
     //1: OFF
@@ -2297,7 +2305,11 @@ void SetParamBasedOnInput(SequenceControlSet *sequence_control_set_ptr)
     // Set down-sampling method     Settings
     // 0                            0: filtering
     // 1                            1: decimation
+#if M0_DWN_SIMPLE
+    if (0)
+#else
     if (sequence_control_set_ptr->static_config.enc_mode == ENC_M0)
+#endif
         sequence_control_set_ptr->down_sampling_method_me_search = ME_FILTERED_DOWNSAMPLED;
     else
         sequence_control_set_ptr->down_sampling_method_me_search = ME_DECIMATED_DOWNSAMPLED;

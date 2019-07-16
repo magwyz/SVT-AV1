@@ -1190,8 +1190,13 @@ EbErrorType signal_derivation_multi_processes_oq(
 
 #endif
 #if LOOP_FILTER_FIX
+
         if (picture_control_set_ptr->enc_mode == ENC_M0)
+#if M0_LOOP_FILTER
+            picture_control_set_ptr->loop_filter_mode = 0;
+#else
             picture_control_set_ptr->loop_filter_mode = 3;
+#endif
         else if (picture_control_set_ptr->enc_mode <= ENC_M5)
             picture_control_set_ptr->loop_filter_mode = picture_control_set_ptr->is_used_as_reference_flag ? 3 : 0;
         else
@@ -1530,7 +1535,11 @@ EbErrorType signal_derivation_multi_processes_oq(
     else
 
 #endif
+#if M0_INTRA_PRED
+        if (0)
+#else
         if (picture_control_set_ptr->enc_mode == ENC_M0)
+#endif
             picture_control_set_ptr->intra_pred_mode = 0;
         else if (picture_control_set_ptr->enc_mode  <= ENC_M1)
             if (picture_control_set_ptr->temporal_layer_index == 0)
@@ -1616,7 +1625,7 @@ EbErrorType signal_derivation_multi_processes_oq(
         // 2                 Full: perform transform partitioning for all block sizes
 
         if (picture_control_set_ptr->enc_mode == ENC_M0 && sequence_control_set_ptr->static_config.encoder_bit_depth == EB_8BIT)
-#if SHUT_ATB
+#if SHUT_ATB ||M0_ATB
             picture_control_set_ptr->atb_mode = 0;
 #else
             if (MR_MODE || USE_MR_CHROMA) // ATB

@@ -2244,8 +2244,11 @@ void set_md_stage_counts(
 		tot_fast1 += context_ptr->fast1_cand_count[class_it];
 	assert(tot_fast1 > 0);
 
-
+#if M0_MD_STAGE
+    if (0)
+#else
 	if (picture_control_set_ptr->enc_mode == ENC_M0)
+#endif
 #if FULL_LOOP_SPLIT
         context_ptr->md_staging_mode = 1; //use fast-loop0->fast-loop1->full-loop0->full-loop1
 #else
@@ -7728,7 +7731,11 @@ void md_encode_block(
         picture_control_set_ptr->parent_pcs_ptr->nsq_search_level >= NSQ_SEARCH_LEVEL1 &&
         picture_control_set_ptr->parent_pcs_ptr->nsq_search_level < NSQ_SEARCH_FULL) ? EB_TRUE : EB_FALSE;
 #if DISABLE_NSQ_TABLE_FOR_M0
+#if M0_NSQ_TAB
+    is_nsq_table_used =  is_nsq_table_used;
+#else
     is_nsq_table_used = picture_control_set_ptr->enc_mode == ENC_M0 ? EB_FALSE : is_nsq_table_used;
+#endif
 #endif
 #endif
     if (is_nsq_table_used) {

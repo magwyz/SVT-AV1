@@ -1330,7 +1330,12 @@ EbErrorType signal_derivation_enc_dec_kernel_oq(
     else
 #endif
 #if SEARCH_UV_BASE
+#if M0_CHROMA
+        if (0)
+
+#else
     if (picture_control_set_ptr->enc_mode == ENC_M0 && picture_control_set_ptr->temporal_layer_index == 0)
+#endif
 #else
     if (picture_control_set_ptr->enc_mode == ENC_M0)
 #endif
@@ -1451,13 +1456,21 @@ EbErrorType signal_derivation_enc_dec_kernel_oq(
         context_ptr->global_mv_injection = 0;
 
 #if NEW_NEAREST_NEW_INJECTION
+#if M0_NEW_NEAREST
+    if (0)
+#else
     if (picture_control_set_ptr->enc_mode == ENC_M0)
+#endif
         context_ptr->new_nearest_near_comb_injection = 1;
     else
         context_ptr->new_nearest_near_comb_injection = 0;
 #endif
 #if ENHANCED_Nx4_4xN_NEW_MV
+#if M0_nx4_4xn
+    if (0)
+#else
     if (picture_control_set_ptr->enc_mode == ENC_M0)
+#endif
         context_ptr->nx4_4xn_parent_mv_injection = 1;
     else
         context_ptr->nx4_4xn_parent_mv_injection = 0;
@@ -1530,7 +1543,9 @@ EbErrorType signal_derivation_enc_dec_kernel_oq(
     else
         context_ptr->unipred3x3_injection = 0;
 #endif
-
+#if M0_3x3_UNI
+    context_ptr->unipred3x3_injection = 0;
+#endif
     // Set bipred3x3 injection
     // Level                Settings
     // 0                    OFF
@@ -1559,13 +1574,19 @@ EbErrorType signal_derivation_enc_dec_kernel_oq(
     else
         context_ptr->bipred3x3_injection = 0;
 #endif
-
+#if M0_3x3_BI
+    context_ptr->bipred3x3_injection = 0;
+#endif
 #if PREDICTIVE_ME
     // Level                Settings
     // 0                    OFF
     // 1                    ON 
     if (picture_control_set_ptr->slice_type != I_SLICE)
+#if M0_PRED_ME
+        if (0)
+#else
         if (picture_control_set_ptr->enc_mode == ENC_M0)
+#endif
             context_ptr->predictive_me_injection = 1;
         else
             context_ptr->predictive_me_injection = 0;
@@ -1643,7 +1664,11 @@ EbErrorType signal_derivation_enc_dec_kernel_oq(
 #endif
 #endif
     // Derive Trellis Quant Coeff Optimization Flag
+#if M0_TRELLIS
+    if (0)
+#else
     if (picture_control_set_ptr->enc_mode == ENC_M0)
+#endif
         context_ptr->trellis_quant_coeff_optimization = EB_TRUE;
     else
         context_ptr->trellis_quant_coeff_optimization = EB_FALSE;

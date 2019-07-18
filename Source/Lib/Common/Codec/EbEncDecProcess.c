@@ -1433,7 +1433,9 @@ EbErrorType signal_derivation_enc_dec_kernel_oq(
         context_ptr->full_loop_escape = 1;
 #endif
 
-
+#if M0_FULL_LOOP_ESCAPE
+    context_ptr->full_loop_escape = 2;
+#endif
 	//MD_CLASS
 	//context_ptr->full_loop_escape = 2;  //to use always the sorted array.
 
@@ -1455,6 +1457,9 @@ EbErrorType signal_derivation_enc_dec_kernel_oq(
     else
         context_ptr->global_mv_injection = 0;
 
+#if M0_GLOBAL_MV
+    context_ptr->global_mv_injection = 0;
+#endif
 #if NEW_NEAREST_NEW_INJECTION
 #if M0_NEW_NEAREST
     if (0)
@@ -1688,7 +1693,9 @@ EbErrorType signal_derivation_enc_dec_kernel_oq(
     else
         context_ptr->redundant_blk = EB_FALSE;
 #endif
-
+#if M0_REDUNDANT_BLOCK
+    context_ptr->redundant_blk = EB_FALSE;
+#endif
     return return_error;
 }
 

@@ -53,7 +53,11 @@ extern "C" {
 #define M0_MRP              0
 #define M0_DWN_SIMPLE       0
 #define M0_3x3_UNI          0
-#define M0_3x3_BI          0
+#define M0_3x3_BI           0
+#define M0_FULL_LOOP_ESCAPE 0
+#define M0_GLOBAL_MV        0
+#define M0_REDUNDANT_BLOCK  0
+#define M0_WM               0
 
 
 

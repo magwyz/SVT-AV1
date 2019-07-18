@@ -2252,7 +2252,7 @@ void SetParamBasedOnInput(SequenceControlSet *sequence_control_set_ptr)
         sequence_control_set_ptr->static_config.super_block_size       =  64;
     else
 #if M0_SB
-        sequence_control_set_ptr->static_config.super_block_size =  64;
+        sequence_control_set_ptr->static_config.super_block_size =  128;
 #else
         sequence_control_set_ptr->static_config.super_block_size       = (sequence_control_set_ptr->static_config.enc_mode == ENC_M0 && sequence_control_set_ptr->input_resolution >= INPUT_SIZE_1080i_RANGE) ? 128 : 64;
 #endif

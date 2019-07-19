@@ -53,6 +53,9 @@ extern "C" {
 #define WARPED_MOTION_DEBUG 0
 #define DEFAULT_WMTYPE AFFINE
 
+#define WARP_ERROR_BLOCK_LOG 5
+#define WARP_ERROR_BLOCK (1 << WARP_ERROR_BLOCK_LOG)
+
 extern const int16_t warped_filter[WARPEDPIXEL_PREC_SHIFTS * 3 + 1][8];
 extern const int error_measure_lut[512];
 

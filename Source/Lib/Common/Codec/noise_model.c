@@ -1294,9 +1294,9 @@ static float *get_half_cos_window(int32_t block_size) {
         (float *)malloc(block_size * block_size * sizeof(*window_function));
     ASSERT(window_function);
     for (int32_t y = 0; y < block_size; ++y) {
-        const double cos_yd = cos((.5 + y) * PI / block_size - PI / 2);
+        const double cos_yd = cos((.5 + y) * M_PI / block_size - M_PI / 2);
         for (int32_t x = 0; x < block_size; ++x) {
-            const double cos_xd = cos((.5 + x) * PI / block_size - PI / 2);
+            const double cos_xd = cos((.5 + x) * M_PI / block_size - M_PI / 2);
             window_function[y * block_size + x] = (float)(cos_yd * cos_xd);
         }
     }

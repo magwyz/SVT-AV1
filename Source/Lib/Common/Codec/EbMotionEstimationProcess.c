@@ -642,6 +642,9 @@ void* motion_estimation_kernel(void *input_ptr)
         }
         if (inputResultsPtr->task_type == 0)
         {
+            // Global motion estimation
+            global_motion_estimation(context_ptr);
+
 
             // ME Kernel Signal(s) derivation
             signal_derivation_me_kernel_oq(

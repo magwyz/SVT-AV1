@@ -16,7 +16,6 @@
 #include "aom_dsp_rtcd.h"
 #include "EbWarpedMotion.h"
 
-#define WARP_ERROR_BLOCK 32
 
 /* clang-format off */
 const int error_measure_lut[512] = {

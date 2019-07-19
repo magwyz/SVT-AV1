@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "EbGlobalMotionEstimation.h"
+#include "EbGlobalMotionEstimationCost.h"
 #include "EbReferenceObject.h"
 
 #include "global_motion.h"
@@ -80,7 +81,6 @@ void compute_global_motion(EbPictureBufferDesc *input_pic, EbPictureBufferDesc *
         0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0
     };
     // clang-format on
-    int num_refs_using_gm = 0;
     int frm_corners[2 * MAX_CORNERS];
     unsigned char *frm_buffer = input_pic->buffer_y;
     // TODO: handle the > 8 bits cases.
@@ -109,9 +109,12 @@ void compute_global_motion(EbPictureBufferDesc *input_pic, EbPictureBufferDesc *
                 frm_buffer, input_pic->max_width, input_pic->max_height,
                 input_pic->stride_y, frm_corners, MAX_CORNERS);
 
+            printf("num_frm_corners: %d\n", num_frm_corners);
+
             TransformationType model;
             #define GLOBAL_TRANS_TYPES_ENC 3
 
+            printf("----\n");
             const GlobalMotionEstimationType gm_estimation_type = GLOBAL_MOTION_FEATURE_BASED;
             for (model = ROTZOOM; model < GLOBAL_TRANS_TYPES_ENC; ++model) {
                 int64_t best_warp_error = INT64_MAX;
@@ -142,6 +145,7 @@ void compute_global_motion(EbPictureBufferDesc *input_pic, EbPictureBufferDesc *
                                     input_pic->buffer_y, input_pic->max_width,
                                     input_pic->max_height, input_pic->stride_y, 5,
                                     best_warp_error);
+                        printf("warp_error: %ld\n", warp_error);
                         if (warp_error < best_warp_error) {
                             best_warp_error = warp_error;
                             // Save the wm_params modified by
@@ -174,6 +178,7 @@ void compute_global_motion(EbPictureBufferDesc *input_pic, EbPictureBufferDesc *
                             ref_pic->stride_y, input_pic->buffer_y,
                             input_pic->max_width, input_pic->max_height,
                             input_pic->stride_y);
+                printf("ref_frame_error: %ld\n", ref_frame_error);
 
                 if (ref_frame_error == 0) continue;
 
@@ -183,13 +188,13 @@ void compute_global_motion(EbPictureBufferDesc *input_pic, EbPictureBufferDesc *
                             (double)best_warp_error / ref_frame_error,
                             gm_get_params_cost(&global_motion, ref_params,
                                                1 /* TODO: check this allow_high_precision_mv */),
-                                               GM_ERRORADV_TR_2 /* TODO: check error advantage */)) {
+                            GM_ERRORADV_TR_0 /* TODO: check error advantage */)) {
                     global_motion = default_warp_params;
+                    printf("discarded\n");
                 }
-                if (global_motion.wmtype != IDENTITY) break;
+                if (global_motion.wmtype == IDENTITY) break;
             }
         }
-        if (global_motion.wmtype != IDENTITY) num_refs_using_gm++;
 
         int gmtype_cost[TRANS_TYPES];
         for (int i = 0; i < TRANS_TYPES; ++i)
@@ -209,7 +214,6 @@ void compute_global_motion(EbPictureBufferDesc *input_pic, EbPictureBufferDesc *
     free(segment_map);
 
     for (int m = 0; m < RANSAC_NUM_MOTIONS; m++) {
-        aom_free(params_by_motion[m].inliers);
+        free(params_by_motion[m].inliers);
     }
-
 }

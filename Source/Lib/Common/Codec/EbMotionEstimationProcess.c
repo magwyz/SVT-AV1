@@ -643,7 +643,11 @@ void* motion_estimation_kernel(void *input_ptr)
         if (inputResultsPtr->task_type == 0)
         {
             // Global motion estimation
-            global_motion_estimation(context_ptr);
+#if 1
+            global_motion_estimation(picture_control_set_ptr,
+                                     context_ptr->me_context_ptr,
+                                     input_picture_ptr);
+#endif
 
 
             // ME Kernel Signal(s) derivation

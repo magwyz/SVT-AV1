@@ -2310,10 +2310,51 @@ void  inject_inter_candidates(
         }
     }
 
-    if (context_ptr->global_mv_injection) {
+    //if (context_ptr->global_mv_injection)
+    if (false)
+    {
         /**************
          GLOBALMV L0
         ************* */
+        printf("GLOBALMV\n");
+
+        candidateArray[canTotalCnt].type = INTER_MODE;
+
+        candidateArray[canTotalCnt].distortion_ready = 0;
+        candidateArray[canTotalCnt].use_intrabc = 0;
+
+        candidateArray[canTotalCnt].merge_flag = EB_FALSE;
+        candidateArray[canTotalCnt].prediction_direction[0] = (EbPredDirection)0;
+
+        candidateArray[canTotalCnt].inter_mode = GLOBALMV;
+        candidateArray[canTotalCnt].pred_mode = GLOBALMV;
+        candidateArray[canTotalCnt].motion_mode = WARPED_CAUSAL;
+
+        candidateArray[canTotalCnt].wm_params = picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME];
+
+        candidateArray[canTotalCnt].is_compound = 0;
+        candidateArray[canTotalCnt].distortion_ready = 0;
+        candidateArray[canTotalCnt].use_intrabc = 0;
+        candidateArray[canTotalCnt].merge_flag = EB_FALSE;
+        candidateArray[canTotalCnt].prediction_direction[0] = UNI_PRED_LIST_0;
+        candidateArray[canTotalCnt].is_new_mv = 0;
+        candidateArray[canTotalCnt].is_zero_mv = 0;
+        candidateArray[canTotalCnt].motion_vector_xl0 = context_ptr->cu_ptr->ref_mvs[LAST_FRAME][0].as_mv.col;
+        candidateArray[canTotalCnt].motion_vector_yl0 = context_ptr->cu_ptr->ref_mvs[LAST_FRAME][0].as_mv.row;
+        candidateArray[canTotalCnt].drl_index = 0;
+        candidateArray[canTotalCnt].ref_mv_index = 0;
+        candidateArray[canTotalCnt].pred_mv_weight = 0;
+        candidateArray[canTotalCnt].ref_frame_type = LAST_FRAME;
+        candidateArray[canTotalCnt].ref_frame_index_l0 = 0;
+        candidateArray[canTotalCnt].ref_frame_index_l1 = -1;
+        candidateArray[canTotalCnt].transform_type[0] = DCT_DCT;
+        candidateArray[canTotalCnt].transform_type_uv = DCT_DCT;
+
+        candidateArray[canTotalCnt].num_proj_ref = 0;
+
+        INCRMENT_CAND_TOTAL_COUNT(canTotalCnt);
+
+#if 0
         {
             int16_t to_inject_mv_x = (int16_t)(picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME].wmmat[1] >> GM_TRANS_ONLY_PREC_DIFF);
             int16_t to_inject_mv_y = (int16_t)(picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME].wmmat[0] >> GM_TRANS_ONLY_PREC_DIFF);
@@ -2356,7 +2397,7 @@ void  inject_inter_candidates(
                 context_ptr->injected_ref_type_l0_array[context_ptr->injected_mv_count_l0] = to_inject_ref_type;
                 ++context_ptr->injected_mv_count_l0;
             }
-            }
+        }
 
         if (isCompoundEnabled && allow_bipred) {
             /**************
@@ -2413,8 +2454,9 @@ void  inject_inter_candidates(
                 context_ptr->injected_ref_type_bipred_array[context_ptr->injected_mv_count_bipred] = to_inject_ref_type;
                 ++context_ptr->injected_mv_count_bipred;
             }
-            }
         }
+#endif
+    }
 
     // Warped Motion
     if (frm_hdr->allow_warped_motion &&

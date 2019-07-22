@@ -3905,6 +3905,9 @@ static void write_global_motion_params(const EbWarpedMotionParams *params,
     const EbWarpedMotionParams *ref_params,
     struct AomWriteBitBuffer *wb,
     int32_t allow_hp) {
+
+    printf("write_global_motion_params, type: %d\n", params->wmtype);
+
     const TransformationType type = params->wmtype;
     assert(type == TRANSLATION || type == IDENTITY);
     aom_wb_write_bit(wb, type != IDENTITY);
@@ -4000,13 +4003,13 @@ static void WriteGlobalMotion(
         "Invalid warp type for frames of different resolutions");
         }
         */
-        /*
-        printf("Frame %d/%d: Enc Ref %d: %d %d %d %d\n",
-        cm->current_video_frame, cm->show_frame, frame,
-        cm->global_motion[frame].wmmat[0],
-        cm->global_motion[frame].wmmat[1], cm->global_motion[frame].wmmat[2],
-        cm->global_motion[frame].wmmat[3]);
-        */
+
+        printf("Enc Ref %d: %d %d %d %d\n",
+        frame,
+        pcs_ptr->global_motion[frame].wmmat[0],
+        pcs_ptr->global_motion[frame].wmmat[1], pcs_ptr->global_motion[frame].wmmat[2],
+        pcs_ptr->global_motion[frame].wmmat[3]);
+
     }
 }
 

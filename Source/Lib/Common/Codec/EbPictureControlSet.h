@@ -14073,6 +14073,9 @@ extern "C" {
         MeLcuResults                        **me_results;
         uint32_t                             *rc_me_distortion;
 
+        // Global motion estimation results
+        EbWarpedMotionParams                  global_motion_estimation;
+
         // Motion Estimation Distortion and OIS Historgram
         uint16_t                             *me_distortion_histogram;
         uint16_t                             *ois_distortion_histogram;

@@ -1556,7 +1556,7 @@ MotionMode motion_mode_allowed(
         const TransformationType gm_type =
             picture_control_set_ptr->parent_pcs_ptr->global_motion[rf0].wmtype;
         if (is_global_mv_block_ent(mode, bsize, gm_type))
-            return SIMPLE_TRANSLATION;
+            return WARPED_CAUSAL;
     }
 
     if (is_motion_variation_allowed_bsize(bsize) &&

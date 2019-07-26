@@ -2332,10 +2332,8 @@ void  inject_inter_candidates(
         int16_t to_inject_mv_x = mv.as_mv.col;
         int16_t to_inject_mv_y = mv.as_mv.row;
 
-        //uint8_t to_inject_ref_type = svt_get_ref_frame_type(REF_LIST_0, 0/*list0_ref_index*/);
-        //if (context_ptr->injected_mv_count_l0 == 0 || mrp_is_already_injected_mv_l0(context_ptr, to_inject_mv_x, to_inject_mv_y, to_inject_ref_type) == EB_FALSE) {
-
-            //printf("%d-%d-%d:    to_inject_mv_x: %d - to_inject_mv_y: %d - to_inject_ref_type: %d\n", params->wmtype, mi_col, mi_row, to_inject_mv_x, to_inject_mv_y, to_inject_ref_type);
+        uint8_t to_inject_ref_type = svt_get_ref_frame_type(REF_LIST_0, 0/*list0_ref_index*/);
+        if (context_ptr->injected_mv_count_l0 == 0 || mrp_is_already_injected_mv_l0(context_ptr, to_inject_mv_x, to_inject_mv_y, to_inject_ref_type) == EB_FALSE) {
             candidateArray[canTotalCnt].type = INTER_MODE;
 
             candidateArray[canTotalCnt].distortion_ready = 0;
@@ -2370,11 +2368,11 @@ void  inject_inter_candidates(
 
             INCRMENT_CAND_TOTAL_COUNT(canTotalCnt);
 
-            /*context_ptr->injected_mv_x_l0_array[context_ptr->injected_mv_count_l0] = to_inject_mv_x;
+            context_ptr->injected_mv_x_l0_array[context_ptr->injected_mv_count_l0] = to_inject_mv_x;
             context_ptr->injected_mv_y_l0_array[context_ptr->injected_mv_count_l0] = to_inject_mv_y;
             context_ptr->injected_ref_type_l0_array[context_ptr->injected_mv_count_l0] = to_inject_ref_type;
             ++context_ptr->injected_mv_count_l0;
-        }*/
+        }
 
 #else
         {
@@ -2481,7 +2479,7 @@ void  inject_inter_candidates(
     }
 
     // Warped Motion
-    /*if (frm_hdr->allow_warped_motion &&
+    if (frm_hdr->allow_warped_motion &&
         has_overlappable_candidates(context_ptr->cu_ptr) &&
         context_ptr->blk_geom->bwidth >= 8 &&
         context_ptr->blk_geom->bheight >= 8 &&
@@ -2495,7 +2493,7 @@ void  inject_inter_candidates(
             me_results,
             use_close_loop_me,
             close_loop_me_index);
-    }*/
+    }
 
     if (inject_newmv_candidate) {
         if (isCompoundEnabled) {

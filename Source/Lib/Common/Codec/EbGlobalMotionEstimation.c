@@ -20,7 +20,7 @@ void global_motion_estimation(PictureParentControlSet *picture_control_set_ptr,
 
     EbWarpedMotionParams bestWarpedMotion = default_warp_params;
 
-    printf("******\n");
+    //printf("******\n");
     for (uint32_t listIndex = REF_LIST_0; listIndex <= numOfListToSearch; ++listIndex)
     {
         uint8_t num_of_ref_pic_to_search;
@@ -113,15 +113,15 @@ void compute_global_motion(EbPictureBufferDesc *input_pic, EbPictureBufferDesc *
             frm_buffer, input_pic->max_width, input_pic->max_height,
             input_pic->stride_y, frm_corners, MAX_CORNERS);
 
-        printf("----\n");
-        printf("num_frm_corners: %d\n", num_frm_corners);
+        //printf("----\n");
+        //printf("num_frm_corners: %d\n", num_frm_corners);
 
         TransformationType model;
         #define GLOBAL_TRANS_TYPES_ENC 3
 
         const GlobalMotionEstimationType gm_estimation_type = GLOBAL_MOTION_FEATURE_BASED;
         for (model = TRANSLATION; model <= GLOBAL_TRANS_TYPES_ENC; ++model) {
-            printf("model: %d\n", model);
+            //printf("model: %d\n", model);
             int64_t best_warp_error = INT64_MAX;
             // Initially set all params to identity.
             for (unsigned i = 0; i < RANSAC_NUM_MOTIONS; ++i) {
@@ -150,7 +150,7 @@ void compute_global_motion(EbPictureBufferDesc *input_pic, EbPictureBufferDesc *
                                 input_pic->buffer_y, input_pic->max_width,
                                 input_pic->max_height, input_pic->stride_y, 5,
                                 best_warp_error);
-                    printf("warp_error: %ld\n", warp_error);
+                    //printf("warp_error: %ld\n", warp_error);
                     if (warp_error < best_warp_error) {
                         best_warp_error = warp_error;
                         // Save the wm_params modified by
@@ -216,7 +216,7 @@ void compute_global_motion(EbPictureBufferDesc *input_pic, EbPictureBufferDesc *
                                      1 /* TODO: check this allow_high_precision_mv */)
             + gmtype_cost[global_motion.wmtype]
             - gmtype_cost[IDENTITY];
-    printf("Cost: %d, type: %d\n", gm_cost, global_motion.wmtype);
+    //printf("Cost: %d, type: %d\n", gm_cost, global_motion.wmtype);
 
     *bestWarpedMotion = global_motion;
 

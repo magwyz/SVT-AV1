@@ -28,11 +28,12 @@
 #include "EbTransformUnit.h"
 #include "EbModeDecisionProcess.h"
 #include "EbMotionEstimation.h"
+#include "EbAdaptiveMotionVectorPrediction.h"
 
 #include "av1me.h"
 #include "hash.h"
 
-#define  INCRMENT_CAND_TOTAL_COUNT(cnt) cnt++; if(cnt>=MODE_DECISION_CANDIDATE_MAX_COUNT) printf(" ERROR: reaching limit for MODE_DECISION_CANDIDATE_MAX_COUNT %i\n",cnt);
+#define  INCRMENT_CAND_TOTAL_COUNT(cnt) {cnt++; if(cnt>=MODE_DECISION_CANDIDATE_MAX_COUNT) printf(" ERROR: reaching limit for MODE_DECISION_CANDIDATE_MAX_COUNT %i\n",cnt);}
 int8_t av1_ref_frame_type(const MvReferenceFrame *const rf);
 /********************************************
 * Constants
@@ -1793,8 +1794,9 @@ void inject_warped_motion_candidates(
                 &candidateArray[canIdx].wm_params,
                 &candidateArray[canIdx].num_proj_ref);
 
-            if (candidateArray[canIdx].local_warp_valid)
+            if (candidateArray[canIdx].local_warp_valid) {
                 INCRMENT_CAND_TOTAL_COUNT(canIdx);
+            }
     }
 
     // NEWMV L0
@@ -1877,8 +1879,9 @@ void inject_warped_motion_candidates(
             &candidateArray[canIdx].wm_params,
             &candidateArray[canIdx].num_proj_ref);
 
-        if (candidateArray[canIdx].local_warp_valid)
+        if (candidateArray[canIdx].local_warp_valid) {
             INCRMENT_CAND_TOTAL_COUNT(canIdx);
+        }
     }
         }
     }
@@ -2310,51 +2313,70 @@ void  inject_inter_candidates(
         }
     }
 
-    //if (context_ptr->global_mv_injection)
-    if (false)
+    if (context_ptr->global_mv_injection)
+    //if (false)
     {
+#if 1
         /**************
          GLOBALMV L0
         ************* */
-        printf("GLOBALMV\n");
+        EbWarpedMotionParams *params = &picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME];
 
-        candidateArray[canTotalCnt].type = INTER_MODE;
+        IntMv mv = gm_get_motion_vector_enc(
+            params,
+            0 /* allow_high_precision_mv */,
+            context_ptr->blk_geom->bsize,
+            mi_col, mi_row,
+            0 /* force_integer_mv */);
 
-        candidateArray[canTotalCnt].distortion_ready = 0;
-        candidateArray[canTotalCnt].use_intrabc = 0;
+        int16_t to_inject_mv_x = mv.as_mv.col;
+        int16_t to_inject_mv_y = mv.as_mv.row;
 
-        candidateArray[canTotalCnt].merge_flag = EB_FALSE;
-        candidateArray[canTotalCnt].prediction_direction[0] = (EbPredDirection)0;
+        //uint8_t to_inject_ref_type = svt_get_ref_frame_type(REF_LIST_0, 0/*list0_ref_index*/);
+        //if (context_ptr->injected_mv_count_l0 == 0 || mrp_is_already_injected_mv_l0(context_ptr, to_inject_mv_x, to_inject_mv_y, to_inject_ref_type) == EB_FALSE) {
 
-        candidateArray[canTotalCnt].inter_mode = GLOBALMV;
-        candidateArray[canTotalCnt].pred_mode = GLOBALMV;
-        candidateArray[canTotalCnt].motion_mode = WARPED_CAUSAL;
+            //printf("%d-%d-%d:    to_inject_mv_x: %d - to_inject_mv_y: %d - to_inject_ref_type: %d\n", params->wmtype, mi_col, mi_row, to_inject_mv_x, to_inject_mv_y, to_inject_ref_type);
+            candidateArray[canTotalCnt].type = INTER_MODE;
 
-        candidateArray[canTotalCnt].wm_params = picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME];
+            candidateArray[canTotalCnt].distortion_ready = 0;
+            candidateArray[canTotalCnt].use_intrabc = 0;
 
-        candidateArray[canTotalCnt].is_compound = 0;
-        candidateArray[canTotalCnt].distortion_ready = 0;
-        candidateArray[canTotalCnt].use_intrabc = 0;
-        candidateArray[canTotalCnt].merge_flag = EB_FALSE;
-        candidateArray[canTotalCnt].prediction_direction[0] = UNI_PRED_LIST_0;
-        candidateArray[canTotalCnt].is_new_mv = 0;
-        candidateArray[canTotalCnt].is_zero_mv = 0;
-        candidateArray[canTotalCnt].motion_vector_xl0 = context_ptr->cu_ptr->ref_mvs[LAST_FRAME][0].as_mv.col;
-        candidateArray[canTotalCnt].motion_vector_yl0 = context_ptr->cu_ptr->ref_mvs[LAST_FRAME][0].as_mv.row;
-        candidateArray[canTotalCnt].drl_index = 0;
-        candidateArray[canTotalCnt].ref_mv_index = 0;
-        candidateArray[canTotalCnt].pred_mv_weight = 0;
-        candidateArray[canTotalCnt].ref_frame_type = LAST_FRAME;
-        candidateArray[canTotalCnt].ref_frame_index_l0 = 0;
-        candidateArray[canTotalCnt].ref_frame_index_l1 = -1;
-        candidateArray[canTotalCnt].transform_type[0] = DCT_DCT;
-        candidateArray[canTotalCnt].transform_type_uv = DCT_DCT;
+            candidateArray[canTotalCnt].merge_flag = EB_FALSE;
+            candidateArray[canTotalCnt].prediction_direction[0] = (EbPredDirection)0;
 
-        candidateArray[canTotalCnt].num_proj_ref = 0;
+            candidateArray[canTotalCnt].inter_mode = GLOBALMV;
+            candidateArray[canTotalCnt].pred_mode = GLOBALMV;
+            candidateArray[canTotalCnt].motion_mode = params->wmtype > TRANSLATION ? WARPED_CAUSAL : SIMPLE_TRANSLATION;
 
-        INCRMENT_CAND_TOTAL_COUNT(canTotalCnt);
+            candidateArray[canTotalCnt].wm_params = picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME];
 
-#if 0
+            candidateArray[canTotalCnt].is_compound = 0;
+            candidateArray[canTotalCnt].distortion_ready = 0;
+            candidateArray[canTotalCnt].use_intrabc = 0;
+            candidateArray[canTotalCnt].merge_flag = EB_FALSE;
+            candidateArray[canTotalCnt].prediction_direction[0] = UNI_PRED_LIST_0;
+            candidateArray[canTotalCnt].is_new_mv = 0;
+            candidateArray[canTotalCnt].is_zero_mv = 0;
+            candidateArray[canTotalCnt].motion_vector_xl0 = to_inject_mv_x;
+            candidateArray[canTotalCnt].motion_vector_yl0 = to_inject_mv_y;
+            candidateArray[canTotalCnt].drl_index = 0;
+            candidateArray[canTotalCnt].ref_mv_index = 0;
+            candidateArray[canTotalCnt].pred_mv_weight = 0;
+            candidateArray[canTotalCnt].ref_frame_type = LAST_FRAME;
+            candidateArray[canTotalCnt].ref_frame_index_l0 = 0;
+            candidateArray[canTotalCnt].ref_frame_index_l1 = -1;
+            candidateArray[canTotalCnt].transform_type[0] = DCT_DCT;
+            candidateArray[canTotalCnt].transform_type_uv = DCT_DCT;
+
+            INCRMENT_CAND_TOTAL_COUNT(canTotalCnt);
+
+            /*context_ptr->injected_mv_x_l0_array[context_ptr->injected_mv_count_l0] = to_inject_mv_x;
+            context_ptr->injected_mv_y_l0_array[context_ptr->injected_mv_count_l0] = to_inject_mv_y;
+            context_ptr->injected_ref_type_l0_array[context_ptr->injected_mv_count_l0] = to_inject_ref_type;
+            ++context_ptr->injected_mv_count_l0;
+        }*/
+
+#else
         {
             int16_t to_inject_mv_x = (int16_t)(picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME].wmmat[1] >> GM_TRANS_ONLY_PREC_DIFF);
             int16_t to_inject_mv_y = (int16_t)(picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME].wmmat[0] >> GM_TRANS_ONLY_PREC_DIFF);
@@ -2459,7 +2481,7 @@ void  inject_inter_candidates(
     }
 
     // Warped Motion
-    if (frm_hdr->allow_warped_motion &&
+    /*if (frm_hdr->allow_warped_motion &&
         has_overlappable_candidates(context_ptr->cu_ptr) &&
         context_ptr->blk_geom->bwidth >= 8 &&
         context_ptr->blk_geom->bheight >= 8 &&
@@ -2473,7 +2495,7 @@ void  inject_inter_candidates(
             me_results,
             use_close_loop_me,
             close_loop_me_index);
-    }
+    }*/
 
     if (inject_newmv_candidate) {
         if (isCompoundEnabled) {
@@ -3458,6 +3480,10 @@ uint8_t product_full_mode_decision(
         cu_ptr->drl_index = candidate_ptr->drl_index;
 
         pu_ptr->inter_mode = candidate_ptr->inter_mode;
+
+        /*if (candidate_ptr->inter_mode == GLOBALMV)
+            printf("product full decision GLOBALMV\n");*/
+
         pu_ptr->is_compound = candidate_ptr->is_compound;
         pu_ptr->pred_mv_weight = candidate_ptr->pred_mv_weight;
         pu_ptr->ref_frame_type = candidate_ptr->ref_frame_type;
@@ -3497,6 +3523,7 @@ uint8_t product_full_mode_decision(
         pu_ptr->overlappable_neighbors[0] = context_ptr->cu_ptr->prediction_unit_array[0].overlappable_neighbors[0];
         pu_ptr->overlappable_neighbors[1] = context_ptr->cu_ptr->prediction_unit_array[0].overlappable_neighbors[1];
         pu_ptr->motion_mode = candidate_ptr->motion_mode;
+        //printf("candidate_ptr->motion_mode: %d %d\n", candidate_ptr->motion_mode, cu_ptr->prediction_unit_array[0].inter_mode);
         pu_ptr->num_proj_ref = candidate_ptr->num_proj_ref;
         if (pu_ptr->motion_mode == WARPED_CAUSAL)
             EB_MEMCPY(&pu_ptr->wm_params, &candidate_ptr->wm_params, sizeof(EbWarpedMotionParams));

@@ -20,6 +20,7 @@
 #include "emmintrin.h"
 
 #include "EbTemporalFiltering.h"
+#include "EbGlobalMotionEstimation.h"
 
 /* --32x32-
 |00||01|

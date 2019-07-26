@@ -1530,7 +1530,7 @@ static INLINE int is_inter_mode(PredictionMode mode)
     return mode >= SINGLE_INTER_MODE_START && mode < SINGLE_INTER_MODE_END;
 }
 
-static INLINE int is_global_mv_block(
+static INLINE int is_global_mv_block_ent(
     const PredictionMode          mode,
     const BlockSize               bsize,
     TransformationType            type)
@@ -1555,7 +1555,7 @@ MotionMode motion_mode_allowed(
     if (frm_hdr->force_integer_mv == 0) {
         const TransformationType gm_type =
             picture_control_set_ptr->parent_pcs_ptr->global_motion[rf0].wmtype;
-        if (is_global_mv_block(mode, bsize, gm_type))
+        if (is_global_mv_block_ent(mode, bsize, gm_type))
             return SIMPLE_TRANSLATION;
     }
 
@@ -1594,8 +1594,11 @@ static void write_motion_mode(
     PictureControlSet      *picture_control_set_ptr)
 {
     const PredictionMode mode = cu_ptr->prediction_unit_array[0].inter_mode;
+
     MotionMode last_motion_mode_allowed =
         motion_mode_allowed(picture_control_set_ptr, cu_ptr, bsize, rf0, rf1, mode);
+    if (mode == GLOBALMV)
+        printf("last_motion_mode_allowed: %d\n", last_motion_mode_allowed);
 
     switch (last_motion_mode_allowed) {
     case SIMPLE_TRANSLATION: break;
@@ -3906,69 +3909,53 @@ static void write_global_motion_params(const EbWarpedMotionParams *params,
     struct AomWriteBitBuffer *wb,
     int32_t allow_hp) {
 
-    printf("write_global_motion_params, type: %d\n", params->wmtype);
-
     const TransformationType type = params->wmtype;
-    assert(type == TRANSLATION || type == IDENTITY);
+
     aom_wb_write_bit(wb, type != IDENTITY);
     if (type != IDENTITY) {
-#if GLOBAL_TRANS_TYPES > 4
-        aom_wb_write_literal(wb, type - 1, GLOBAL_TYPE_BITS);
-#else
-        aom_wb_write_bit(wb, type == ROTZOOM);
-        if (type != ROTZOOM) aom_wb_write_bit(wb, type == TRANSLATION);
-#endif  // GLOBAL_TRANS_TYPES > 4
+      aom_wb_write_bit(wb, type == ROTZOOM);
+      if (type != ROTZOOM) aom_wb_write_bit(wb, type == TRANSLATION);
     }
 
     if (type >= ROTZOOM) {
-        int16_t ref2 = (int16_t)((ref_params->wmmat[2] >> GM_ALPHA_PREC_DIFF) - (1 << GM_ALPHA_PREC_BITS));
-        int16_t v2 = (int16_t)((params->wmmat[2] >> GM_ALPHA_PREC_DIFF) - (1 << GM_ALPHA_PREC_BITS));
-
-        int16_t ref3 = (int16_t)(ref_params->wmmat[3] >> GM_ALPHA_PREC_DIFF);
-        int16_t v3 = (int16_t)(params->wmmat[3] >> GM_ALPHA_PREC_DIFF);
-
-        aom_wb_write_signed_primitive_refsubexpfin(
-            wb, GM_ALPHA_MAX + 1, SUBEXPFIN_K,
-            ref2/*(ref_params->wmmat[2] >> GM_ALPHA_PREC_DIFF) - (1 << GM_ALPHA_PREC_BITS)*/,
-            v2/*(int16_t)((params->wmmat[2] >> GM_ALPHA_PREC_DIFF) - (1 << GM_ALPHA_PREC_BITS))*/);
-        aom_wb_write_signed_primitive_refsubexpfin(
-            wb, GM_ALPHA_MAX + 1, SUBEXPFIN_K,
-            ref3/*(ref_params->wmmat[3] >> GM_ALPHA_PREC_DIFF)*/,
-            v3/*(int16_t)(params->wmmat[3] >> GM_ALPHA_PREC_DIFF)*/);
+      aom_wb_write_signed_primitive_refsubexpfin(
+          wb, GM_ALPHA_MAX + 1, SUBEXPFIN_K,
+          (ref_params->wmmat[2] >> GM_ALPHA_PREC_DIFF) -
+              (1 << GM_ALPHA_PREC_BITS),
+          (params->wmmat[2] >> GM_ALPHA_PREC_DIFF) - (1 << GM_ALPHA_PREC_BITS));
+      aom_wb_write_signed_primitive_refsubexpfin(
+          wb, GM_ALPHA_MAX + 1, SUBEXPFIN_K,
+          (ref_params->wmmat[3] >> GM_ALPHA_PREC_DIFF),
+          (params->wmmat[3] >> GM_ALPHA_PREC_DIFF));
     }
 
     if (type >= AFFINE) {
-        int16_t ref4 = (int16_t)(ref_params->wmmat[4] >> GM_ALPHA_PREC_DIFF);
-        int16_t v4 = (int16_t)(params->wmmat[4] >> GM_ALPHA_PREC_DIFF);
-
-        int16_t ref5 = (int16_t)((ref_params->wmmat[5] >> GM_ALPHA_PREC_DIFF) - (1 << GM_ALPHA_PREC_BITS));
-        int16_t v5 = (int16_t)((params->wmmat[5] >> GM_ALPHA_PREC_DIFF) - (1 << GM_ALPHA_PREC_BITS));
-
-        aom_wb_write_signed_primitive_refsubexpfin(
-            wb, GM_ALPHA_MAX + 1, SUBEXPFIN_K,
-            ref4/*(ref_params->wmmat[4] >> GM_ALPHA_PREC_DIFF)*/,
-            v4/*(int16_t)(params->wmmat[4] >> GM_ALPHA_PREC_DIFF)*/);
-        aom_wb_write_signed_primitive_refsubexpfin(
-            wb, GM_ALPHA_MAX + 1, SUBEXPFIN_K,
-            ref5/*(ref_params->wmmat[5] >> GM_ALPHA_PREC_DIFF) -    (1 << GM_ALPHA_PREC_BITS)*/,
-            v5/*(int16_t)(params->wmmat[5] >> GM_ALPHA_PREC_DIFF) - (1 << GM_ALPHA_PREC_BITS)*/);
+      aom_wb_write_signed_primitive_refsubexpfin(
+          wb, GM_ALPHA_MAX + 1, SUBEXPFIN_K,
+          (ref_params->wmmat[4] >> GM_ALPHA_PREC_DIFF),
+          (params->wmmat[4] >> GM_ALPHA_PREC_DIFF));
+      aom_wb_write_signed_primitive_refsubexpfin(
+          wb, GM_ALPHA_MAX + 1, SUBEXPFIN_K,
+          (ref_params->wmmat[5] >> GM_ALPHA_PREC_DIFF) -
+              (1 << GM_ALPHA_PREC_BITS),
+          (params->wmmat[5] >> GM_ALPHA_PREC_DIFF) - (1 << GM_ALPHA_PREC_BITS));
     }
 
     if (type >= TRANSLATION) {
-        const int32_t trans_bits = (type == TRANSLATION)
-            ? GM_ABS_TRANS_ONLY_BITS - !allow_hp
-            : GM_ABS_TRANS_BITS;
-        const int32_t trans_prec_diff = (type == TRANSLATION)
-            ? GM_TRANS_ONLY_PREC_DIFF + !allow_hp
-            : GM_TRANS_PREC_DIFF;
-        aom_wb_write_signed_primitive_refsubexpfin(
-            wb, (1 << trans_bits) + 1, SUBEXPFIN_K,
-            (int16_t)(ref_params->wmmat[0] >> trans_prec_diff),
-            (int16_t)(params->wmmat[0] >> trans_prec_diff));
-        aom_wb_write_signed_primitive_refsubexpfin(
-            wb, (1 << trans_bits) + 1, SUBEXPFIN_K,
-            (int16_t)(ref_params->wmmat[1] >> trans_prec_diff),
-            (int16_t)(params->wmmat[1] >> trans_prec_diff));
+      const int trans_bits = (type == TRANSLATION)
+                                 ? GM_ABS_TRANS_ONLY_BITS - !allow_hp
+                                 : GM_ABS_TRANS_BITS;
+      const int trans_prec_diff = (type == TRANSLATION)
+                                      ? GM_TRANS_ONLY_PREC_DIFF + !allow_hp
+                                      : GM_TRANS_PREC_DIFF;
+      aom_wb_write_signed_primitive_refsubexpfin(
+          wb, (1 << trans_bits) + 1, SUBEXPFIN_K,
+          (ref_params->wmmat[0] >> trans_prec_diff),
+          (params->wmmat[0] >> trans_prec_diff));
+      aom_wb_write_signed_primitive_refsubexpfin(
+          wb, (1 << trans_bits) + 1, SUBEXPFIN_K,
+          (ref_params->wmmat[1] >> trans_prec_diff),
+          (params->wmmat[1] >> trans_prec_diff));
     }
 }
 static void WriteGlobalMotion(
@@ -3986,6 +3973,23 @@ static void WriteGlobalMotion(
         const EbWarpedMotionParams *ref_params = &default_warp_params;
         //pcs_ptr->prev_frame ? &pcs_ptr->prev_frame->global_motion[frame] : &default_warp_params;
 #endif
+
+        printf("type: %d - %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+               pcs_ptr->global_motion[frame].wmtype,
+               pcs_ptr->global_motion[frame].alpha,
+               pcs_ptr->global_motion[frame].beta ,
+               pcs_ptr->global_motion[frame].delta,
+               pcs_ptr->global_motion[frame].gamma,
+               pcs_ptr->global_motion[frame].invalid,
+               pcs_ptr->global_motion[frame].wmmat[0],
+               pcs_ptr->global_motion[frame].wmmat[1],
+               pcs_ptr->global_motion[frame].wmmat[2],
+               pcs_ptr->global_motion[frame].wmmat[3],
+               pcs_ptr->global_motion[frame].wmmat[4],
+               pcs_ptr->global_motion[frame].wmmat[5],
+               pcs_ptr->global_motion[frame].wmmat[6],
+               pcs_ptr->global_motion[frame].wmmat[7]);
+
         write_global_motion_params(&pcs_ptr->global_motion[frame], ref_params, wb,
             frm_hdr->allow_high_precision_mv);
         // TODO(sarahparker, debargha): The logic in the commented out code below
@@ -4004,11 +4008,11 @@ static void WriteGlobalMotion(
         }
         */
 
-        printf("Enc Ref %d: %d %d %d %d\n",
+        /*printf("Enc Ref %d: %d %d %d %d\n",
         frame,
         pcs_ptr->global_motion[frame].wmmat[0],
         pcs_ptr->global_motion[frame].wmmat[1], pcs_ptr->global_motion[frame].wmmat[2],
-        pcs_ptr->global_motion[frame].wmmat[3]);
+        pcs_ptr->global_motion[frame].wmmat[3]);*/
 
     }
 }
@@ -6257,6 +6261,7 @@ assert(bsize < BlockSizeS_ALL);
 
                 if (frm_hdr->is_motion_mode_switchable
                     && rf[1] != INTRA_FRAME) {
+
                     write_motion_mode(
                         frameContext,
                         ec_writer,
@@ -6266,6 +6271,17 @@ assert(bsize < BlockSizeS_ALL);
                         rf[1],
                         cu_ptr,
                         picture_control_set_ptr);
+
+                    const PredictionMode mode = cu_ptr->prediction_unit_array[0].inter_mode;
+                    {
+                        MotionMode last_motion_mode_allowed =
+                            motion_mode_allowed(picture_control_set_ptr, cu_ptr, bsize, rf[0], rf[1], mode);
+                        printf("%ld - %d %d, mode: %d, motion_mode: %d, last_motion_mode_allowed: %d, bsize: %d, mv: %d %d\n",
+                               picture_control_set_ptr->picture_number,
+                               mi_col, mi_row, mode, cu_ptr->prediction_unit_array[0].motion_mode,
+                               last_motion_mode_allowed, bsize,
+                                cu_ptr->prediction_unit_array[0].mv[0].x, cu_ptr->prediction_unit_array[0].mv[0].y);
+                    }
                 }
 
                 if (sequence_control_set_ptr->seq_header.enable_masked_compound || sequence_control_set_ptr->seq_header.order_hint_info.enable_jnt_comp)

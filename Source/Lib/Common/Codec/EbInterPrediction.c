@@ -2870,9 +2870,12 @@ extern /*static*/ void model_rd_for_sb(
     av1_set_ref_frame(rf, candidate_buffer_ptr->candidate_ptr->ref_frame_type);
     // Now check if all global motion is non translational
     for (ref = 0; ref < 1 + candidate_buffer_ptr->candidate_ptr->is_compound/*has_second_ref(mbmi)*/; ++ref) {
-        if (picture_control_set_ptr->parent_pcs_ptr->global_motion[ref ? rf[1] : rf[0]].wmtype == TRANSLATION)
+        //printf("is_nontrans_global_motion\n");
+        //abort();
+        if (picture_control_set_ptr->parent_pcs_ptr->global_motion[ref ? rf[1] : rf[0]].wmtype == TRANSLATION) {
             //if (xd->global_motion[mbmi->ref_frame[ref]].wmtype == TRANSLATION)
             return 0;
+        }
     }
     return 1;
 }

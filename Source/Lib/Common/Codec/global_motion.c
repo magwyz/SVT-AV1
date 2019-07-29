@@ -277,14 +277,14 @@ static void get_inliers_from_indices(MotionModel *params,
 static int compute_global_motion_feature_based(
     TransformationType type, unsigned char *frm_buffer, int frm_width,
     int frm_height, int frm_stride, int *frm_corners, int num_frm_corners,
-    EbPictureBufferDesc *ref, int bit_depth, int *num_inliers_by_motion,
+    uint8_t *ref, int ref_stride, int bit_depth, int *num_inliers_by_motion,
     MotionModel *params_by_motion, int num_motions) {
   int i;
   int num_ref_corners;
   int num_correspondences;
   int *correspondences;
   int ref_corners[2 * MAX_CORNERS];
-  unsigned char *ref_buffer = ref->buffer_y;
+  unsigned char *ref_buffer = ref;
   RansacFunc ransac = av1_get_ransac_type(type);
 
   // TODO: handle downconversion.
@@ -293,8 +293,8 @@ static int compute_global_motion_feature_based(
   }*/
 
   num_ref_corners =
-      av1_fast_corner_detect(ref_buffer, ref->max_width, ref->max_height,
-                             ref->stride_y, ref_corners, MAX_CORNERS);
+      av1_fast_corner_detect(ref_buffer, frm_width, frm_height,
+                             ref_stride, ref_corners, MAX_CORNERS);
 
   // find correspondences between the two images
   correspondences =
@@ -302,7 +302,7 @@ static int compute_global_motion_feature_based(
   num_correspondences = av1_determine_correspondence(
       frm_buffer, (int *)frm_corners, num_frm_corners, ref_buffer,
       (int *)ref_corners, num_ref_corners, frm_width, frm_height, frm_stride,
-      ref->stride_y, correspondences);
+      ref_stride, correspondences);
 
   ransac(correspondences, num_correspondences, num_inliers_by_motion,
          params_by_motion, num_motions);
@@ -332,150 +332,6 @@ static INLINE int valid_point(int x, int y, int width, int height) {
          (x < (width - PATCH_SIZE - PATCH_CENTER)) &&
          (y > (PATCH_SIZE + PATCH_CENTER)) &&
          (y < (height - PATCH_SIZE - PATCH_CENTER));
-}
-
-static int determine_disflow_correspondence(int *frm_corners,
-                                            int num_frm_corners, double *flow_u,
-                                            double *flow_v, int width,
-                                            int height, int stride,
-                                            double *correspondences) {
-  int num_correspondences = 0;
-  int x, y;
-  for (int i = 0; i < num_frm_corners; ++i) {
-    x = frm_corners[2 * i];
-    y = frm_corners[2 * i + 1];
-    if (valid_point(x, y, width, height)) {
-      correspondences[4 * num_correspondences] = x;
-      correspondences[4 * num_correspondences + 1] = y;
-      correspondences[4 * num_correspondences + 2] = x + flow_u[y * stride + x];
-      correspondences[4 * num_correspondences + 3] = y + flow_v[y * stride + x];
-      num_correspondences++;
-    }
-  }
-  return num_correspondences;
-}
-
-static double getCubicValue(double p[4], double x) {
-  return p[1] + 0.5 * x *
-                    (p[2] - p[0] +
-                     x * (2.0 * p[0] - 5.0 * p[1] + 4.0 * p[2] - p[3] +
-                          x * (3.0 * (p[1] - p[2]) + p[3] - p[0])));
-}
-
-static void get_subcolumn(unsigned char *ref, double col[4], int stride, int x,
-                          int y_start) {
-  int i;
-  for (i = 0; i < 4; ++i) {
-    col[i] = ref[(i + y_start) * stride + x];
-  }
-}
-
-static double bicubic(unsigned char *ref, double x, double y, int stride) {
-  double arr[4];
-  int k;
-  int i = (int)x;
-  int j = (int)y;
-  for (k = 0; k < 4; ++k) {
-    double arr_temp[4];
-    get_subcolumn(ref, arr_temp, stride, i + k - 1, j - 1);
-    arr[k] = getCubicValue(arr_temp, y - j);
-  }
-  return getCubicValue(arr, x - i);
-}
-
-// Interpolate a warped block using bicubic interpolation when possible
-static unsigned char interpolate(unsigned char *ref, double x, double y,
-                                 int width, int height, int stride) {
-  if (x < 0 && y < 0)
-    return ref[0];
-  else if (x < 0 && y > height - 1)
-    return ref[(height - 1) * stride];
-  else if (x > width - 1 && y < 0)
-    return ref[width - 1];
-  else if (x > width - 1 && y > height - 1)
-    return ref[(height - 1) * stride + (width - 1)];
-  else if (x < 0) {
-    int v;
-    int i = (int)y;
-    double a = y - i;
-    if (y > 1 && y < height - 2) {
-      double arr[4];
-      get_subcolumn(ref, arr, stride, 0, i - 1);
-      return clamp((int)(getCubicValue(arr, a) + 0.5), 0, 255);
-    }
-    v = (int)(ref[i * stride] * (1 - a) + ref[(i + 1) * stride] * a + 0.5);
-    return clamp(v, 0, 255);
-  } else if (y < 0) {
-    int v;
-    int j = (int)x;
-    double b = x - j;
-    if (x > 1 && x < width - 2) {
-      double arr[4] = { ref[j - 1], ref[j], ref[j + 1], ref[j + 2] };
-      return clamp((int)(getCubicValue(arr, b) + 0.5), 0, 255);
-    }
-    v = (int)(ref[j] * (1 - b) + ref[j + 1] * b + 0.5);
-    return clamp(v, 0, 255);
-  } else if (x > width - 1) {
-    int v;
-    int i = (int)y;
-    double a = y - i;
-    if (y > 1 && y < height - 2) {
-      double arr[4];
-      get_subcolumn(ref, arr, stride, width - 1, i - 1);
-      return clamp((int)(getCubicValue(arr, a) + 0.5), 0, 255);
-    }
-    v = (int)(ref[i * stride + width - 1] * (1 - a) +
-              ref[(i + 1) * stride + width - 1] * a + 0.5);
-    return clamp(v, 0, 255);
-  } else if (y > height - 1) {
-    int v;
-    int j = (int)x;
-    double b = x - j;
-    if (x > 1 && x < width - 2) {
-      int row = (height - 1) * stride;
-      double arr[4] = { ref[row + j - 1], ref[row + j], ref[row + j + 1],
-                        ref[row + j + 2] };
-      return clamp((int)(getCubicValue(arr, b) + 0.5), 0, 255);
-    }
-    v = (int)(ref[(height - 1) * stride + j] * (1 - b) +
-              ref[(height - 1) * stride + j + 1] * b + 0.5);
-    return clamp(v, 0, 255);
-  } else if (x > 1 && y > 1 && x < width - 2 && y < height - 2) {
-    return clamp((int)(bicubic(ref, x, y, stride) + 0.5), 0, 255);
-  } else {
-    int i = (int)y;
-    int j = (int)x;
-    double a = y - i;
-    double b = x - j;
-    int v = (int)(ref[i * stride + j] * (1 - a) * (1 - b) +
-                  ref[i * stride + j + 1] * (1 - a) * b +
-                  ref[(i + 1) * stride + j] * a * (1 - b) +
-                  ref[(i + 1) * stride + j + 1] * a * b);
-    return clamp(v, 0, 255);
-  }
-}
-
-// Warps a block using flow vector [u, v] and computes the mse
-static double compute_warp_and_error(unsigned char *ref, unsigned char *frm,
-                                     int width, int height, int stride, int x,
-                                     int y, double u, double v, int16_t *dt) {
-  int i, j;
-  unsigned char warped;
-  double x_w, y_w;
-  double mse = 0;
-  int16_t err = 0;
-  for (i = y; i < y + PATCH_SIZE; ++i)
-    for (j = x; j < x + PATCH_SIZE; ++j) {
-      x_w = (double)j + u;
-      y_w = (double)i + v;
-      warped = interpolate(ref, x_w, y_w, width, height, stride);
-      err = warped - frm[j + i * stride];
-      mse += err * err;
-      dt[(i - y) * PATCH_SIZE + (j - x)] = err;
-    }
-
-  mse /= (PATCH_SIZE * PATCH_SIZE);
-  return mse;
 }
 
 // Computes the components of the system of equations used to solve for
@@ -543,7 +399,7 @@ static INLINE void update_level_dims(ImagePyramid *frm_pyr, int level) {
 int av1_compute_global_motion(TransformationType type,
                               unsigned char *frm_buffer, int frm_width,
                               int frm_height, int frm_stride, int *frm_corners,
-                              int num_frm_corners, EbPictureBufferDesc *ref,
+                              int num_frm_corners, uint8_t *ref, int ref_stride,
                               int bit_depth,
                               GlobalMotionEstimationType gm_estimation_type,
                               int *num_inliers_by_motion,
@@ -552,7 +408,7 @@ int av1_compute_global_motion(TransformationType type,
     case GLOBAL_MOTION_FEATURE_BASED:
       return compute_global_motion_feature_based(
           type, frm_buffer, frm_width, frm_height, frm_stride, frm_corners,
-          num_frm_corners, ref, bit_depth, num_inliers_by_motion,
+          num_frm_corners, ref, ref_stride, bit_depth, num_inliers_by_motion,
           params_by_motion, num_motions);
     default: assert(0 && "Unknown global motion estimation type");
   }

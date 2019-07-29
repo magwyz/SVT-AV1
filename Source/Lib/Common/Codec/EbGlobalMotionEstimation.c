@@ -19,8 +19,8 @@ void global_motion_estimation(PictureParentControlSet *picture_control_set_ptr,
                             : (uint32_t)REF_LIST_1;
 
     EbWarpedMotionParams bestWarpedMotion = default_warp_params;
+    EbWarpedMotionParams bestInvWarpedMotion = default_warp_params;
 
-    //printf("******\n");
     for (uint32_t listIndex = REF_LIST_0; listIndex <= numOfListToSearch; ++listIndex)
     {
         uint8_t num_of_ref_pic_to_search;
@@ -52,10 +52,12 @@ void global_motion_estimation(PictureParentControlSet *picture_control_set_ptr,
 
 
             compute_global_motion(input_picture_ptr, ref_picture_ptr, &bestWarpedMotion);
+            compute_global_motion(ref_picture_ptr, input_picture_ptr, &bestInvWarpedMotion);
         }
     }
 
     picture_control_set_ptr->global_motion_estimation = bestWarpedMotion;
+    picture_control_set_ptr->inv_global_motion_estimation = bestInvWarpedMotion;
 }
 
 
@@ -88,19 +90,9 @@ void compute_global_motion(EbPictureBufferDesc *input_pic, EbPictureBufferDesc *
     };
     // clang-format on
     int frm_corners[2 * MAX_CORNERS];
-    unsigned char *frm_buffer = input_pic->buffer_y;
+    unsigned char *frm_buffer = input_pic->buffer_y + input_pic->origin_x + input_pic->origin_y * input_pic->stride_y;
+    unsigned char *ref_buffer = ref_pic->buffer_y + ref_pic->origin_x + ref_pic->origin_y * ref_pic->stride_y;
     // TODO: handle the > 8 bits cases.
-
-
-    const int segment_map_w =
-            (input_pic->max_width + WARP_ERROR_BLOCK) >> WARP_ERROR_BLOCK_LOG;
-    const int segment_map_h =
-            (input_pic->max_height + WARP_ERROR_BLOCK) >> WARP_ERROR_BLOCK_LOG;
-
-    uint8_t *segment_map =
-            malloc(sizeof(*segment_map) * segment_map_w * segment_map_h);
-    memset(segment_map, 0,
-           sizeof(*segment_map) * segment_map_w * segment_map_h);
 
     EbWarpedMotionParams global_motion = default_warp_params;
 
@@ -110,10 +102,9 @@ void compute_global_motion(EbPictureBufferDesc *input_pic, EbPictureBufferDesc *
     {
         // compute interest points using FAST features
         int num_frm_corners = av1_fast_corner_detect(
-            frm_buffer, input_pic->max_width, input_pic->max_height,
+            frm_buffer, input_pic->width, input_pic->height,
             input_pic->stride_y, frm_corners, MAX_CORNERS);
 
-        //printf("----\n");
         //printf("num_frm_corners: %d\n", num_frm_corners);
 
         TransformationType model;
@@ -121,7 +112,6 @@ void compute_global_motion(EbPictureBufferDesc *input_pic, EbPictureBufferDesc *
 
         const GlobalMotionEstimationType gm_estimation_type = GLOBAL_MOTION_FEATURE_BASED;
         for (model = TRANSLATION; model <= GLOBAL_TRANS_TYPES_ENC; ++model) {
-            //printf("model: %d\n", model);
             int64_t best_warp_error = INT64_MAX;
             // Initially set all params to identity.
             for (unsigned i = 0; i < RANSAC_NUM_MOTIONS; ++i) {
@@ -130,9 +120,9 @@ void compute_global_motion(EbPictureBufferDesc *input_pic, EbPictureBufferDesc *
             }
 
             av1_compute_global_motion(
-                        model, frm_buffer, input_pic->max_width, input_pic->max_height,
+                        model, frm_buffer, input_pic->width, input_pic->height,
                         input_pic->stride_y, frm_corners, num_frm_corners,
-                        ref_pic, ref_pic->bit_depth,
+                        ref_buffer, ref_pic->stride_y, ref_pic->bit_depth,
                         gm_estimation_type, inliers_by_motion, params_by_motion,
                         RANSAC_NUM_MOTIONS);
 
@@ -145,12 +135,10 @@ void compute_global_motion(EbPictureBufferDesc *input_pic, EbPictureBufferDesc *
                 if (tmp_wm_params.wmtype != IDENTITY) {
                     const int64_t warp_error = av1_refine_integerized_param(
                                 &tmp_wm_params, tmp_wm_params.wmtype, ref_pic->bit_depth > 8 /* High bitrate */,
-                                ref_pic->bit_depth, ref_pic->buffer_y, ref_pic->max_width,
-                                ref_pic->max_height, ref_pic->stride_y,
-                                input_pic->buffer_y, input_pic->max_width,
-                                input_pic->max_height, input_pic->stride_y, 5,
+                                ref_pic->bit_depth,
+                                ref_buffer, ref_pic->width, ref_pic->height, ref_pic->stride_y,
+                                frm_buffer, input_pic->width, input_pic->height, input_pic->stride_y, 5,
                                 best_warp_error);
-                    //printf("warp_error: %ld\n", warp_error);
                     if (warp_error < best_warp_error) {
                         best_warp_error = warp_error;
                         // Save the wm_params modified by
@@ -167,11 +155,11 @@ void compute_global_motion(EbPictureBufferDesc *input_pic, EbPictureBufferDesc *
 
             if (global_motion.wmtype == TRANSLATION) {
                 global_motion.wmmat[0] =
-                        convert_to_trans_prec(1, // TODO: check this allow_high_precision_mv
+                        convert_to_trans_prec(0, // TODO: check this allow_high_precision_mv
                                               global_motion.wmmat[0]) *
                         GM_TRANS_ONLY_DECODE_FACTOR;
                 global_motion.wmmat[1] =
-                        convert_to_trans_prec(1, // TODO: check this allow_high_precision_mv
+                        convert_to_trans_prec(0, // TODO: check this allow_high_precision_mv
                                               global_motion.wmmat[1]) *
                         GM_TRANS_ONLY_DECODE_FACTOR;
             }
@@ -180,10 +168,8 @@ void compute_global_motion(EbPictureBufferDesc *input_pic, EbPictureBufferDesc *
                 continue;
 
             const int64_t ref_frame_error = av1_frame_error(
-                        ref_pic->bit_depth > 8 /* High bitrate */, ref_pic->bit_depth, ref_pic->buffer_y,
-                        ref_pic->stride_y, input_pic->buffer_y,
-                        input_pic->max_width, input_pic->max_height,
-                        input_pic->stride_y);
+                        ref_pic->bit_depth > 8 /* High bitrate */, ref_pic->bit_depth, ref_buffer, ref_pic->stride_y, frm_buffer,
+                        input_pic->width, input_pic->height, input_pic->stride_y);
 
             if (ref_frame_error == 0)
                 continue;
@@ -193,7 +179,7 @@ void compute_global_motion(EbPictureBufferDesc *input_pic, EbPictureBufferDesc *
             if (!av1_is_enough_erroradvantage(
                         (double)best_warp_error / ref_frame_error,
                         gm_get_params_cost(&global_motion, ref_params,
-                                           1 /* TODO: check this allow_high_precision_mv */),
+                                           0 /* TODO: check this allow_high_precision_mv */),
                         GM_ERRORADV_TR_0 /* TODO: check error advantage */)) {
                 global_motion = default_warp_params;
             }
@@ -220,7 +206,6 @@ void compute_global_motion(EbPictureBufferDesc *input_pic, EbPictureBufferDesc *
 
     *bestWarpedMotion = global_motion;
 
-    free(segment_map);
     for (int m = 0; m < RANSAC_NUM_MOTIONS; m++) {
         free(params_by_motion[m].inliers);
     }

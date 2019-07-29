@@ -342,6 +342,50 @@ void DetectGlobalMotion(
             picture_control_set_ptr->tiltMvy = (int16_t)(yTiltMvSum / totalTiltLcus);
         }
     }
+
+
+    unsigned checkedLcusCount = 0;
+    unsigned globalMotionLcus = 0;
+
+    for (sb_count = 0; sb_count < picture_control_set_ptr->sb_total_count; ++sb_count) {
+        sb_origin_x = (sb_count % picture_width_in_sb) * BLOCK_SIZE_64;
+        sb_origin_y = (sb_count / picture_width_in_sb) * BLOCK_SIZE_64;
+        if (((sb_origin_x + BLOCK_SIZE_64) <= picture_control_set_ptr->enhanced_picture_ptr->width) &&
+            ((sb_origin_y + BLOCK_SIZE_64) <= picture_control_set_ptr->enhanced_picture_ptr->height)) {
+            // Current MV
+            GetMv(picture_control_set_ptr, sb_count, &xCurrentMv, &yCurrentMv);
+
+            // MV from global motion
+            IntMv gm = gm_get_motion_vector_enc(
+                &picture_control_set_ptr->global_motion_estimation,
+                0 /* allow_hp */,
+                BLOCK_64X64,
+                sb_origin_x / 4, sb_origin_y / 4,
+                0 /* is_integer */);
+
+            checkedLcusCount++;
+
+            // Check if global motion match current vector
+            float scalar_product = xCurrentMv * gm.as_mv.col + yCurrentMv * gm.as_mv.row;
+            float normCurrentMv = sqrt(xCurrentMv * xCurrentMv + yCurrentMv * yCurrentMv);
+            float normGlobalMv = sqrt(gm.as_mv.col * gm.as_mv.col + gm.as_mv.row * gm.as_mv.row);
+            float cosine = normCurrentMv > 0 && normGlobalMv > 0 ?
+                        scalar_product / (normCurrentMv * normGlobalMv) : 1;
+            float angle = acos(cosine) * 180 / M_PI;
+            float normRatio = fabs(1 - normGlobalMv / normCurrentMv);
+
+            if (normRatio < 2 && angle < 45)
+                globalMotionLcus++;
+
+            //printf("angle: %f°, norm ratio: %f\n", angle, normRatio);
+        }
+    }
+
+    if ((checkedLcusCount > 0) && ((globalMotionLcus * 100 / checkedLcusCount) > 75)) {
+        printf("is_global_motion = EB_TRUE, global motion mode: %d\n",
+               picture_control_set_ptr->global_motion_estimation.wmtype);
+        picture_control_set_ptr->is_global_motion = EB_TRUE;
+    }
 }
 
 /************************************************

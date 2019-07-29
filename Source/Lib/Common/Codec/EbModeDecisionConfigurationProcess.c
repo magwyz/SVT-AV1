@@ -354,6 +354,15 @@ void SetGlobalMotionField(
 
     //Update MV
 #if 0
+    if (picture_control_set_ptr->parent_pcs_ptr->is_global_motion) {
+        picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME] = picture_control_set_ptr->parent_pcs_ptr->global_motion_estimation;
+        picture_control_set_ptr->parent_pcs_ptr->global_motion[BWDREF_FRAME] = picture_control_set_ptr->parent_pcs_ptr->inv_global_motion_estimation;
+    }
+
+    /*printf("---> global motion type: %d %d\n",
+           picture_control_set_ptr->parent_pcs_ptr->global_motion_estimation.wmtype,
+           picture_control_set_ptr->parent_pcs_ptr->inv_global_motion_estimation.wmtype);*/
+#else
     if (picture_control_set_ptr->parent_pcs_ptr->is_pan && picture_control_set_ptr->parent_pcs_ptr->is_tilt) {
         printf("pan tilt\n");
         picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME].wmtype = TRANSLATION;
@@ -381,14 +390,6 @@ void SetGlobalMotionField(
     picture_control_set_ptr->parent_pcs_ptr->global_motion[BWDREF_FRAME].wmmat[0] = 0 - picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME].wmmat[0];
     picture_control_set_ptr->parent_pcs_ptr->global_motion[BWDREF_FRAME].wmmat[1] = (int32_t)clamp(picture_control_set_ptr->parent_pcs_ptr->global_motion[BWDREF_FRAME].wmmat[1], GM_TRANS_MIN*GM_TRANS_DECODE_FACTOR, GM_TRANS_MAX*GM_TRANS_DECODE_FACTOR);
     picture_control_set_ptr->parent_pcs_ptr->global_motion[BWDREF_FRAME].wmmat[0] = (int32_t)clamp(picture_control_set_ptr->parent_pcs_ptr->global_motion[BWDREF_FRAME].wmmat[0], GM_TRANS_MIN*GM_TRANS_DECODE_FACTOR, GM_TRANS_MAX*GM_TRANS_DECODE_FACTOR);
-#else
-    picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME] = picture_control_set_ptr->parent_pcs_ptr->global_motion_estimation;
-
-    /*picture_control_set_ptr->parent_pcs_ptr->global_motion[BWDREF_FRAME].wmtype = picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME].wmtype;
-    picture_control_set_ptr->parent_pcs_ptr->global_motion[BWDREF_FRAME].wmmat[1] = -picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME].wmmat[1];
-    picture_control_set_ptr->parent_pcs_ptr->global_motion[BWDREF_FRAME].wmmat[0] = -picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME].wmmat[0];*/
-
-    //printf("---> global motion type: %d\n", picture_control_set_ptr->parent_pcs_ptr->global_motion_estimation.wmtype);
 #endif
 
     //convert_to_trans_prec(

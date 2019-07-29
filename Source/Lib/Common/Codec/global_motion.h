@@ -80,7 +80,7 @@ int64_t av1_refine_integerized_param(EbWarpedMotionParams *wm, TransformationTyp
 int av1_compute_global_motion(TransformationType type,
                               unsigned char *frm_buffer, int frm_width,
                               int frm_height, int frm_stride, int *frm_corners,
-                              int num_frm_corners, EbPictureBufferDesc *ref,
+                              int num_frm_corners, uint8_t *ref, int ref_stride,
                               int bit_depth,
                               GlobalMotionEstimationType gm_estimation_type,
                               int *num_inliers_by_motion,

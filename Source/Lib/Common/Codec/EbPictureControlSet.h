@@ -14026,6 +14026,7 @@ extern "C" {
         uint8_t                               fade_in_to_black;
         EbBool                                is_pan;
         EbBool                                is_tilt;
+        EbBool                                is_global_motion;
         uint8_t                              *sb_flat_noise_array;
         EdgeLcuResults                     *edge_results_ptr;                // used by EncDecProcess()
         uint8_t                              *sharp_edge_sb_flag;
@@ -14075,6 +14076,7 @@ extern "C" {
 
         // Global motion estimation results
         EbWarpedMotionParams                  global_motion_estimation;
+        EbWarpedMotionParams                  inv_global_motion_estimation;
 
         // Motion Estimation Distortion and OIS Historgram
         uint16_t                             *me_distortion_histogram;

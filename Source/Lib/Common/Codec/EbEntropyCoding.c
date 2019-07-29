@@ -3974,7 +3974,7 @@ static void WriteGlobalMotion(
         //pcs_ptr->prev_frame ? &pcs_ptr->prev_frame->global_motion[frame] : &default_warp_params;
 #endif
 
-        printf("type: %d - %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+        /*printf("type: %d - %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
                pcs_ptr->global_motion[frame].wmtype,
                pcs_ptr->global_motion[frame].alpha,
                pcs_ptr->global_motion[frame].beta ,
@@ -3988,7 +3988,7 @@ static void WriteGlobalMotion(
                pcs_ptr->global_motion[frame].wmmat[4],
                pcs_ptr->global_motion[frame].wmmat[5],
                pcs_ptr->global_motion[frame].wmmat[6],
-               pcs_ptr->global_motion[frame].wmmat[7]);
+               pcs_ptr->global_motion[frame].wmmat[7]);*/
 
         write_global_motion_params(&pcs_ptr->global_motion[frame], ref_params, wb,
             frm_hdr->allow_high_precision_mv);
@@ -6276,11 +6276,12 @@ assert(bsize < BlockSizeS_ALL);
                     {
                         MotionMode last_motion_mode_allowed =
                             motion_mode_allowed(picture_control_set_ptr, cu_ptr, bsize, rf[0], rf[1], mode);
-                        printf("%ld - %d %d, mode: %d, motion_mode: %d, last_motion_mode_allowed: %d, bsize: %d, mv: %d %d\n",
-                               picture_control_set_ptr->picture_number,
-                               mi_col, mi_row, mode, cu_ptr->prediction_unit_array[0].motion_mode,
-                               last_motion_mode_allowed, bsize,
-                                cu_ptr->prediction_unit_array[0].mv[0].x, cu_ptr->prediction_unit_array[0].mv[0].y);
+                        if (mode == GLOBALMV)
+                            printf("%ld - %d %d, mode: %d, motion_mode: %d, last_motion_mode_allowed: %d, bsize: %d, mv: %d %d\n",
+                                   picture_control_set_ptr->picture_number,
+                                   mi_col, mi_row, mode, cu_ptr->prediction_unit_array[0].motion_mode,
+                                   last_motion_mode_allowed, bsize,
+                                    cu_ptr->prediction_unit_array[0].mv[0].x, cu_ptr->prediction_unit_array[0].mv[0].y);
                     }
                 }
 

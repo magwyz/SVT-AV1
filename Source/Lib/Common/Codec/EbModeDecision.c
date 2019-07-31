@@ -2315,7 +2315,7 @@ void  inject_inter_candidates(
 
     if (context_ptr->global_mv_injection)
     {
-#if 0
+#if 1
         /**************
          GLOBALMV L0
         ************* */

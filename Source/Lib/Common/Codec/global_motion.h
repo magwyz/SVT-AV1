@@ -25,7 +25,7 @@ extern "C" {
 #endif
 
 #define MAX_CORNERS 4096
-#define RANSAC_NUM_MOTIONS 1
+#define RANSAC_NUM_MOTIONS 100
 
 typedef enum {
   GLOBAL_MOTION_FEATURE_BASED,

@@ -19,7 +19,6 @@ void global_motion_estimation(PictureParentControlSet *picture_control_set_ptr,
                             : (uint32_t)REF_LIST_1;
 
     EbWarpedMotionParams bestWarpedMotion = default_warp_params;
-    EbWarpedMotionParams bestInvWarpedMotion = default_warp_params;
 
     for (uint32_t listIndex = REF_LIST_0; listIndex <= numOfListToSearch; ++listIndex)
     {
@@ -52,12 +51,19 @@ void global_motion_estimation(PictureParentControlSet *picture_control_set_ptr,
 
 
             compute_global_motion(input_picture_ptr, ref_picture_ptr, &bestWarpedMotion);
-            compute_global_motion(ref_picture_ptr, input_picture_ptr, &bestInvWarpedMotion);
         }
     }
 
     picture_control_set_ptr->global_motion_estimation = bestWarpedMotion;
-    picture_control_set_ptr->inv_global_motion_estimation = bestInvWarpedMotion;
+
+    IntMv gm = gm_get_motion_vector_enc(
+        &picture_control_set_ptr->global_motion_estimation,
+        0 /* allow_hp */,
+        BLOCK_8X8,
+        0, 0,
+        0 /* is_integer */);
+
+    printf("-> %d %d\n", gm.as_mv.col, gm.as_mv.row);
 }
 
 

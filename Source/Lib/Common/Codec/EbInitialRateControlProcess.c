@@ -360,7 +360,7 @@ void DetectGlobalMotion(
                 &picture_control_set_ptr->global_motion_estimation,
                 0 /* allow_hp */,
                 BLOCK_64X64,
-                sb_origin_x / 4, sb_origin_y / 4,
+                sb_origin_x / MI_SIZE, sb_origin_y / MI_SIZE,
                 0 /* is_integer */);
 
             checkedLcusCount++;
@@ -374,16 +374,22 @@ void DetectGlobalMotion(
             float angle = acos(cosine) * 180 / M_PI;
             float normRatio = fabs(1 - normGlobalMv / normCurrentMv);
 
-            if (normRatio < 2 && angle < 45)
+            if (angle < 45)
                 globalMotionLcus++;
 
-            //printf("angle: %f°, norm ratio: %f\n", angle, normRatio);
+            /*printf("angle: %f°, norm ratio: %f, %d %d - %d %d - %d\n",
+                   angle, normRatio, xCurrentMv, yCurrentMv, gm.as_mv.col, gm.as_mv.row,
+                    picture_control_set_ptr->panMvx);*/
         }
     }
 
-    if ((checkedLcusCount > 0) && ((globalMotionLcus * 100 / checkedLcusCount) > 75)) {
-        printf("is_global_motion = EB_TRUE, global motion mode: %d\n",
-               picture_control_set_ptr->global_motion_estimation.wmtype);
+    float percentage = globalMotionLcus * 100 / checkedLcusCount;
+    printf("percentage: %f %d %d\n", percentage, globalMotionLcus, checkedLcusCount);
+    if (checkedLcusCount > 0 && percentage > 75) {
+        printf("%ld: is_global_motion = EB_TRUE, global motion mode: %d, %f %% \n",
+               picture_control_set_ptr->picture_number,
+               picture_control_set_ptr->global_motion_estimation.wmtype,
+               percentage);
         picture_control_set_ptr->is_global_motion = EB_TRUE;
     }
 }

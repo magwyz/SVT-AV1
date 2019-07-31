@@ -14076,7 +14076,6 @@ extern "C" {
 
         // Global motion estimation results
         EbWarpedMotionParams                  global_motion_estimation;
-        EbWarpedMotionParams                  inv_global_motion_estimation;
 
         // Motion Estimation Distortion and OIS Historgram
         uint16_t                             *me_distortion_histogram;

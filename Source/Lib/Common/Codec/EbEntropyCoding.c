@@ -1597,8 +1597,6 @@ static void write_motion_mode(
 
     MotionMode last_motion_mode_allowed =
         motion_mode_allowed(picture_control_set_ptr, cu_ptr, bsize, rf0, rf1, mode);
-    if (mode == GLOBALMV)
-        printf("last_motion_mode_allowed: %d\n", last_motion_mode_allowed);
 
     switch (last_motion_mode_allowed) {
     case SIMPLE_TRANSLATION: break;
@@ -6277,8 +6275,8 @@ assert(bsize < BlockSizeS_ALL);
                         MotionMode last_motion_mode_allowed =
                             motion_mode_allowed(picture_control_set_ptr, cu_ptr, bsize, rf[0], rf[1], mode);
                         if (mode == GLOBALMV)
-                            printf("%ld - %d %d, mode: %d, motion_mode: %d, last_motion_mode_allowed: %d, bsize: %d, mv: %d %d\n",
-                                   picture_control_set_ptr->picture_number,
+                            printf("%ld %d - %d %d, mode: %d, motion_mode: %d, last_motion_mode_allowed: %d, bsize: %d, mv: %d %d\n",
+                                   picture_control_set_ptr->picture_number, rf[0],
                                    mi_col, mi_row, mode, cu_ptr->prediction_unit_array[0].motion_mode,
                                    last_motion_mode_allowed, bsize,
                                     cu_ptr->prediction_unit_array[0].mv[0].x, cu_ptr->prediction_unit_array[0].mv[0].y);

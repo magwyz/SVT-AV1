@@ -33,35 +33,6 @@
 // Border over which to compute the global motion
 #define ERRORADV_BORDER 0
 
-// Number of pyramid levels in disflow computation
-#define N_LEVELS 2
-// Size of square patches in the disflow dense grid
-#define PATCH_SIZE 8
-// Center point of square patch
-#define PATCH_CENTER ((PATCH_SIZE + 1) >> 1)
-// Step size between patches, lower value means greater patch overlap
-#define PATCH_STEP 1
-// Minimum size of border padding for disflow
-#define MIN_PAD 7
-// Warp error convergence threshold for disflow
-#define DISFLOW_ERROR_TR 0.01
-// Max number of iterations if warp convergence is not found
-#define DISFLOW_MAX_ITR 10
-
-// Struct for an image pyramid
-typedef struct {
-  int n_levels;
-  int pad_size;
-  int has_gradient;
-  int widths[N_LEVELS];
-  int heights[N_LEVELS];
-  int strides[N_LEVELS];
-  int level_loc[N_LEVELS];
-  unsigned char *level_buffer;
-  double *level_dx_buffer;
-  double *level_dy_buffer;
-} ImagePyramid;
-
 // TODO(sarahparker) These need to be retuned for speed 0 and 1 to
 // maximize gains from segmented error metric
 static const double erroradv_tr[] = { 0.65, 0.60, 0.65 };
@@ -161,15 +132,15 @@ static void force_wmtype(EbWarpedMotionParams *wm, TransformationType wmtype) {
     case IDENTITY:
       wm->wmmat[0] = 0;
       wm->wmmat[1] = 0;
-      //AOM_FALLTHROUGH_INTENDED;
+      AOM_FALLTHROUGH_INTENDED;
     case TRANSLATION:
       wm->wmmat[2] = 1 << WARPEDMODEL_PREC_BITS;
       wm->wmmat[3] = 0;
-      //AOM_FALLTHROUGH_INTENDED;
+      AOM_FALLTHROUGH_INTENDED;
     case ROTZOOM:
       wm->wmmat[4] = -wm->wmmat[3];
       wm->wmmat[5] = wm->wmmat[2];
-      //AOM_FALLTHROUGH_INTENDED;
+      AOM_FALLTHROUGH_INTENDED;
     case AFFINE: wm->wmmat[6] = wm->wmmat[7] = 0; break;
     default: assert(0);
   }
@@ -326,75 +297,6 @@ static int compute_global_motion_feature_based(
   return 0;
 }
 
-// Don't use points around the frame border since they are less reliable
-static INLINE int valid_point(int x, int y, int width, int height) {
-  return (x > (PATCH_SIZE + PATCH_CENTER)) &&
-         (x < (width - PATCH_SIZE - PATCH_CENTER)) &&
-         (y > (PATCH_SIZE + PATCH_CENTER)) &&
-         (y < (height - PATCH_SIZE - PATCH_CENTER));
-}
-
-// Computes the components of the system of equations used to solve for
-// a flow vector. This includes:
-// 1.) The hessian matrix for optical flow. This matrix is in the
-// form of:
-//
-//       M = |sum(dx * dx)  sum(dx * dy)|
-//           |sum(dx * dy)  sum(dy * dy)|
-//
-// 2.)   b = |sum(dx * dt)|
-//           |sum(dy * dt)|
-// Where the sums are computed over a square window of PATCH_SIZE.
-static INLINE void compute_flow_system(const double *dx, int dx_stride,
-                                       const double *dy, int dy_stride,
-                                       const int16_t *dt, int dt_stride,
-                                       double *M, double *b) {
-  for (int i = 0; i < PATCH_SIZE; i++) {
-    for (int j = 0; j < PATCH_SIZE; j++) {
-      M[0] += dx[i * dx_stride + j] * dx[i * dx_stride + j];
-      M[1] += dx[i * dx_stride + j] * dy[i * dy_stride + j];
-      M[3] += dy[i * dy_stride + j] * dy[i * dy_stride + j];
-
-      b[0] += dx[i * dx_stride + j] * dt[i * dt_stride + j];
-      b[1] += dy[i * dy_stride + j] * dt[i * dt_stride + j];
-    }
-  }
-
-  M[2] = M[1];
-}
-
-// Solves a general Mx = b where M is a 2x2 matrix and b is a 2x1 matrix
-static INLINE void solve_2x2_system(const double *M, const double *b,
-                                    double *output_vec) {
-  double M_0 = M[0];
-  double M_3 = M[3];
-  double det = (M_0 * M_3) - (M[1] * M[2]);
-  if (det < 1e-5) {
-    // Handle singular matrix
-    // TODO(sarahparker) compare results using pseudo inverse instead
-    M_0 += 1e-10;
-    M_3 += 1e-10;
-    det = (M_0 * M_3) - (M[1] * M[2]);
-  }
-  const double det_inv = 1 / det;
-  const double mult_b0 = det_inv * b[0];
-  const double mult_b1 = det_inv * b[1];
-  output_vec[0] = M_3 * mult_b0 - M[1] * mult_b1;
-  output_vec[1] = -M[2] * mult_b0 + M_0 * mult_b1;
-}
-
-
-static INLINE void update_level_dims(ImagePyramid *frm_pyr, int level) {
-  frm_pyr->widths[level] = frm_pyr->widths[level - 1] >> 1;
-  frm_pyr->heights[level] = frm_pyr->heights[level - 1] >> 1;
-  frm_pyr->strides[level] = frm_pyr->widths[level] + 2 * frm_pyr->pad_size;
-  // Point the beginning of the next level buffer to the correct location inside
-  // the padded border
-  frm_pyr->level_loc[level] =
-      frm_pyr->level_loc[level - 1] +
-      frm_pyr->strides[level - 1] *
-          (2 * frm_pyr->pad_size + frm_pyr->heights[level - 1]);
-}
 
 int av1_compute_global_motion(TransformationType type,
                               unsigned char *frm_buffer, int frm_width,

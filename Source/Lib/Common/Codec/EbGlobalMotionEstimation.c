@@ -76,6 +76,25 @@ static INLINE int convert_to_trans_prec(int allow_hp, int coor) {
 }
 
 
+void writeImg(const char* path, unsigned width, unsigned height, unsigned stride, const uint8_t *data)
+{
+    FILE *fd = fopen(path, "wb");
+    for (unsigned y = 0; y < height; y++)
+        for (unsigned x = 0; x < width; ++x)
+            fwrite((char *)&data[y * stride + x], 1, 1, fd);
+    fclose(fd);
+}
+
+
+void readImg(const char* path, unsigned width, unsigned height, unsigned stride, const uint8_t *data)
+{
+    FILE *fd = fopen(path, "rb");
+    for (unsigned y = 0; y < height; y++)
+        for (unsigned x = 0; x < width; ++x)
+            fread((char *)&data[y * stride + x], 1, 1, fd);
+    fclose(fd);
+}
+
 
 void compute_global_motion(EbPictureBufferDesc *input_pic, EbPictureBufferDesc *ref_pic,
                            EbWarpedMotionParams *bestWarpedMotion)

@@ -1122,8 +1122,8 @@ IntMv gm_get_motion_vector_enc(
       // After the right shifts, there are 3 fractional bits of precision. If
       // allow_hp is false, the bottom bit is always zero (so we don't need a
       // call to convert_to_trans_prec here)
-      res.as_mv.row = gm->wmmat[0] >> GM_TRANS_ONLY_PREC_DIFF;
-      res.as_mv.col = gm->wmmat[1] >> GM_TRANS_ONLY_PREC_DIFF;
+      res.as_mv.row = gm->wmmat[1] >> GM_TRANS_ONLY_PREC_DIFF;
+      res.as_mv.col = gm->wmmat[0] >> GM_TRANS_ONLY_PREC_DIFF;
       assert(IMPLIES(1 & (res.as_mv.row | res.as_mv.col), allow_hp));
       if (is_integer) {
         integer_mv_precision(&res.as_mv);

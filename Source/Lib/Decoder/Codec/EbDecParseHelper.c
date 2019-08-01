@@ -425,8 +425,8 @@ IntMv_dec gm_get_motion_vector(const GlobalMotionParams *gm, int allow_hp,
     int x = 0, y = 0, tx = 0, ty = 0;
 
     if (gm->gm_type == TRANSLATION) {
-        res.as_mv.row = gm->gm_params[0] >> GM_TRANS_ONLY_PREC_DIFF;
-        res.as_mv.col = gm->gm_params[1] >> GM_TRANS_ONLY_PREC_DIFF;
+        res.as_mv.row = gm->gm_params[1] >> GM_TRANS_ONLY_PREC_DIFF;
+        res.as_mv.col = gm->gm_params[0] >> GM_TRANS_ONLY_PREC_DIFF;
         assert(IMPLIES(1 & (res.as_mv.row | res.as_mv.col), allow_hp));
         if (is_integer)
             integer_mv_precision(&res.as_mv);

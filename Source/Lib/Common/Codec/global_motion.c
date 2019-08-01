@@ -279,6 +279,7 @@ static int compute_global_motion_feature_based(
          params_by_motion, num_motions);
 
   // Set num_inliers = 0 for motions with too few inliers so they are ignored.
+  printf("num_correspondences: %d\n", num_correspondences);
   for (i = 0; i < num_motions; ++i) {
     if (num_inliers_by_motion[i] < MIN_INLIER_PROB * num_correspondences ||
         num_correspondences == 0) {
@@ -289,6 +290,17 @@ static int compute_global_motion_feature_based(
   }
 
   free(correspondences);
+
+  int64_t sumDiffX = 0;
+  int64_t sumDiffY = 0;
+  for (int j = 0; j < params_by_motion->num_inliers; ++j) {
+      sumDiffX += correspondences[4 * j] - correspondences[4 * j + 2];
+      sumDiffY += correspondences[4 * j + 1] - correspondences[4 * j + 3];
+  }
+
+  printf("diff: %f %f\n",
+         (float)sumDiffX / params_by_motion->num_inliers,
+         (float)sumDiffY / params_by_motion->num_inliers);
 
   // Return true if any one of the motions has inliers.
   for (i = 0; i < num_motions; ++i) {

@@ -347,6 +347,9 @@ void DetectGlobalMotion(
             // Current MV
             GetMv(picture_control_set_ptr, sb_count, &xCurrentMv, &yCurrentMv);
 
+            xCurrentMv *= 2;
+            yCurrentMv *= 2;
+
             // MV from global motion
             IntMv gm = gm_get_motion_vector_enc(
                 &picture_control_set_ptr->global_motion_estimation,
@@ -362,16 +365,16 @@ void DetectGlobalMotion(
             float normCurrentMv = sqrt(xCurrentMv * xCurrentMv + yCurrentMv * yCurrentMv);
             float normGlobalMv = sqrt(gm.as_mv.col * gm.as_mv.col + gm.as_mv.row * gm.as_mv.row);
             float cosine = normCurrentMv > 0 && normGlobalMv > 0 ?
-                        scalar_product / (normCurrentMv * normGlobalMv) : 1;
-            float angle = acos(cosine) * 180 / M_PI;
-            float normRatio = fabs(1 - normGlobalMv / normCurrentMv);
+                        scalar_product / (normCurrentMv * normGlobalMv) : 1.f;
+            float angle = cosine >= 1.f ? 0.f : acos(cosine) * 180 / M_PI;
+            float normRatio = fabs(normGlobalMv / normCurrentMv);
 
             if (angle < 45)
                 globalMotionLcus++;
 
-            /*printf("angle: %f°, norm ratio: %f, %d %d - %d %d - %d\n",
+            printf("angle: %f°, norm ratio: %f, %d %d - %d %d - %d\n",
                    angle, normRatio, xCurrentMv, yCurrentMv, gm.as_mv.col, gm.as_mv.row,
-                    picture_control_set_ptr->panMvx);*/
+                    picture_control_set_ptr->panMvx);
         }
     }
 

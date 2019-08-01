@@ -20,8 +20,10 @@ void global_motion_estimation(PictureParentControlSet *picture_control_set_ptr,
 
     EbWarpedMotionParams bestWarpedMotion = default_warp_params;
 
+    printf("----- numOfListToSearch: %d\n", numOfListToSearch);
     for (uint32_t listIndex = REF_LIST_0; listIndex <= numOfListToSearch; ++listIndex)
     {
+        printf("listIndex: %d\n", listIndex);
         uint8_t num_of_ref_pic_to_search;
 
         if (context_ptr->me_alt_ref == EB_TRUE)
@@ -51,6 +53,8 @@ void global_motion_estimation(PictureParentControlSet *picture_control_set_ptr,
 
 
             compute_global_motion(input_picture_ptr, ref_picture_ptr, &bestWarpedMotion);
+
+            listIndex = REF_LIST_1; // double break
         }
     }
 
@@ -136,7 +140,7 @@ void compute_global_motion(EbPictureBufferDesc *input_pic, EbPictureBufferDesc *
         #define GLOBAL_TRANS_TYPES_ENC 3
 
         const GlobalMotionEstimationType gm_estimation_type = GLOBAL_MOTION_FEATURE_BASED;
-        for (model = TRANSLATION; model <= GLOBAL_TRANS_TYPES_ENC; ++model) {
+        for (model = ROTZOOM; model <= GLOBAL_TRANS_TYPES_ENC; ++model) {
             int64_t best_warp_error = INT64_MAX;
             // Initially set all params to identity.
             for (unsigned i = 0; i < RANSAC_NUM_MOTIONS; ++i) {
@@ -156,6 +160,9 @@ void compute_global_motion(EbPictureBufferDesc *input_pic, EbPictureBufferDesc *
 
                 params_this_motion = params_by_motion[i].params;
                 av1_convert_model_to_params(params_this_motion, &tmp_wm_params);
+
+                /*const double *m = params_this_motion;
+                printf("---> %f %f %f\n     %f %f %f\n     %f %f %f\n", m[2], m[3], m[0], m[4], m[5], m[1], m[6], m[7], 1.f);*/
 
                 if (tmp_wm_params.wmtype != IDENTITY) {
                     const int64_t warp_error = av1_refine_integerized_param(

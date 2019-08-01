@@ -29,18 +29,10 @@ void GetMv(
     int32_t                        *xCurrentMv,
     int32_t                        *yCurrentMv)
 {
-    uint32_t             meCandidateIndex;
-
     const MeLcuResults *me_results = picture_control_set_ptr->me_results[sb_index];
-    uint8_t total_me_cnt = me_results->total_me_candidate_index[0];
-    const MeCandidate *me_block_results = me_results->me_candidate[0];
-    for (meCandidateIndex = 0; meCandidateIndex < total_me_cnt; meCandidateIndex++) {
-        if (me_block_results->direction == UNI_PRED_LIST_0) {
-            *xCurrentMv = me_results->me_mv_array[0][0].x_mv;
-            *yCurrentMv = me_results->me_mv_array[0][0].y_mv;
-            break;
-        }
-    }
+
+    *xCurrentMv = me_results->me_mv_array[0][0].x_mv;
+    *yCurrentMv = me_results->me_mv_array[0][0].y_mv;
 }
 
 void GetMeDist(

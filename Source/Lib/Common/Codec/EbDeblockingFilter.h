@@ -222,6 +222,12 @@ extern "C" {
     void aom_lpf_vertical_8_dual_c(uint8_t *s, int32_t pitch, const uint8_t *blimit0, const uint8_t *limit0, const uint8_t *thresh0, const uint8_t *blimit1, const uint8_t *limit1, const uint8_t *thresh1);
 #define aom_lpf_vertical_8_dual aom_lpf_vertical_8_dual_c
 
+    void eb_av1_setup_dst_planes(
+        struct MacroblockdPlane *planes, BlockSize bsize,
+        const EbPictureBufferDesc *src,
+        int32_t mi_row, int32_t mi_col,
+        const int32_t plane_start, const int32_t plane_end);
+
 #ifdef __cplusplus
 }
 #endif

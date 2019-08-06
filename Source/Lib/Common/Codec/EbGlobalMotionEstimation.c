@@ -18,12 +18,9 @@ void global_motion_estimation(PictureParentControlSet *picture_control_set_ptr,
                             ? (uint32_t)REF_LIST_0
                             : (uint32_t)REF_LIST_1;
 
-    EbWarpedMotionParams bestWarpedMotion = default_warp_params;
-
     printf("----- numOfListToSearch: %d\n", numOfListToSearch);
     for (uint32_t listIndex = REF_LIST_0; listIndex <= numOfListToSearch; ++listIndex)
     {
-        printf("listIndex: %d\n", listIndex);
         uint8_t num_of_ref_pic_to_search;
 
         if (context_ptr->me_alt_ref == EB_TRUE)
@@ -36,6 +33,9 @@ void global_motion_estimation(PictureParentControlSet *picture_control_set_ptr,
                           ? picture_control_set_ptr->ref_list0_count
                           : picture_control_set_ptr->ref_list1_count;
 
+        num_of_ref_pic_to_search = AOMMIN(num_of_ref_pic_to_search, 1);
+
+        printf("listIndex: %d, num_of_ref_pic_to_search: %d\n", listIndex, num_of_ref_pic_to_search);
         // Ref Picture Loop
         for (uint32_t ref_pic_index = 0; ref_pic_index < num_of_ref_pic_to_search;
              ++ref_pic_index)
@@ -51,14 +51,18 @@ void global_motion_estimation(PictureParentControlSet *picture_control_set_ptr,
 
             EbPictureBufferDesc *ref_picture_ptr = (EbPictureBufferDesc*)referenceObject->input_padded_picture_ptr;
 
-
-            compute_global_motion(input_picture_ptr, ref_picture_ptr, &bestWarpedMotion);
-
-            listIndex = REF_LIST_1; // double break
+            switch (listIndex) {
+            case REF_LIST_0:
+                compute_global_motion(input_picture_ptr, ref_picture_ptr, &picture_control_set_ptr->global_motion_estimation);
+                break;
+            case REF_LIST_1:
+                compute_global_motion(input_picture_ptr, ref_picture_ptr, &picture_control_set_ptr->rev_global_motion_estimation);
+                break;
+            default:
+                break;
+            }
         }
     }
-
-    picture_control_set_ptr->global_motion_estimation = bestWarpedMotion;
 
     IntMv gm = gm_get_motion_vector_enc(
         &picture_control_set_ptr->global_motion_estimation,

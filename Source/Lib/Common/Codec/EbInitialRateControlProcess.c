@@ -35,6 +35,19 @@ void GetMv(
     *yCurrentMv = me_results->me_mv_array[0][0].y_mv;
 }
 
+void GetRevMv(
+    SequenceControlSet         *sequence_control_set_ptr,
+    PictureParentControlSet    *picture_control_set_ptr,
+    uint32_t                         sb_index,
+    int32_t                        *xCurrentMv,
+    int32_t                        *yCurrentMv)
+{
+    const MeLcuResults *me_results = picture_control_set_ptr->me_results[sb_index];
+
+    *xCurrentMv = me_results->me_mv_array[0][sequence_control_set_ptr->mrp_mode == 0 ? 4 : 2].x_mv;
+    *yCurrentMv = me_results->me_mv_array[0][sequence_control_set_ptr->mrp_mode == 0 ? 4 : 2].y_mv;
+}
+
 void GetMeDist(
     PictureParentControlSet    *picture_control_set_ptr,
     uint32_t                         sb_index,
@@ -207,7 +220,23 @@ void CheckForNonUniformMotionVectorField(
     }
 }
 
+
+void getAngleAndNormRatio(IntMv gm,
+                          int32_t xCurrentMv, int32_t yCurrentMv,
+                          float *angle, float *normRatio)
+{
+    float scalar_product = xCurrentMv * gm.as_mv.col + yCurrentMv * gm.as_mv.row;
+    float normCurrentMv = sqrt(xCurrentMv * xCurrentMv + yCurrentMv * yCurrentMv);
+    float normGlobalMv = sqrt(gm.as_mv.col * gm.as_mv.col + gm.as_mv.row * gm.as_mv.row);
+    float cosine = normCurrentMv > 0 && normGlobalMv > 0 ?
+                scalar_product / (normCurrentMv * normGlobalMv) : 1.f;
+    *angle = cosine >= 1.f ? 0.f : acos(cosine) * 180 / M_PI;
+    *normRatio = fabs(normGlobalMv / normCurrentMv);
+}
+
+
 void DetectGlobalMotion(
+    SequenceControlSet         *sequence_control_set_ptr,
     PictureParentControlSet    *picture_control_set_ptr)
 {
     uint32_t    sb_count;
@@ -338,6 +367,10 @@ void DetectGlobalMotion(
 
     unsigned checkedLcusCount = 0;
     unsigned globalMotionLcus = 0;
+    unsigned rev_globalMotionLcus = 0;
+
+    picture_control_set_ptr->is_global_motion = EB_FALSE;
+    picture_control_set_ptr->is_rev_global_motion = EB_FALSE;
 
     for (sb_count = 0; sb_count < picture_control_set_ptr->sb_total_count; ++sb_count) {
         sb_origin_x = (sb_count % picture_width_in_sb) * BLOCK_SIZE_64;
@@ -346,9 +379,15 @@ void DetectGlobalMotion(
             ((sb_origin_y + BLOCK_SIZE_64) <= picture_control_set_ptr->enhanced_picture_ptr->height)) {
             // Current MV
             GetMv(picture_control_set_ptr, sb_count, &xCurrentMv, &yCurrentMv);
-
             xCurrentMv *= 2;
             yCurrentMv *= 2;
+
+            int32_t    xRevCurrentMv = 0;
+            int32_t    yRevCurrentMv = 0;
+
+            GetRevMv(sequence_control_set_ptr, picture_control_set_ptr, sb_count, &xRevCurrentMv, &yRevCurrentMv);
+            xRevCurrentMv *= 2;
+            yRevCurrentMv *= 2;
 
             // MV from global motion
             IntMv gm = gm_get_motion_vector_enc(
@@ -358,19 +397,29 @@ void DetectGlobalMotion(
                 sb_origin_x / MI_SIZE, sb_origin_y / MI_SIZE,
                 0 /* is_integer */);
 
+            IntMv rev_gm = gm_get_motion_vector_enc(
+                &picture_control_set_ptr->rev_global_motion_estimation,
+                0 /* allow_hp */,
+                BLOCK_64X64,
+                sb_origin_x / MI_SIZE, sb_origin_y / MI_SIZE,
+                0 /* is_integer */);
+
             checkedLcusCount++;
 
             // Check if global motion match current vector
-            float scalar_product = xCurrentMv * gm.as_mv.col + yCurrentMv * gm.as_mv.row;
-            float normCurrentMv = sqrt(xCurrentMv * xCurrentMv + yCurrentMv * yCurrentMv);
-            float normGlobalMv = sqrt(gm.as_mv.col * gm.as_mv.col + gm.as_mv.row * gm.as_mv.row);
-            float cosine = normCurrentMv > 0 && normGlobalMv > 0 ?
-                        scalar_product / (normCurrentMv * normGlobalMv) : 1.f;
-            float angle = cosine >= 1.f ? 0.f : acos(cosine) * 180 / M_PI;
-            float normRatio = fabs(normGlobalMv / normCurrentMv);
+            float angle, normRatio, rev_angle, rev_normRatio;
+            getAngleAndNormRatio(gm,
+                                 xCurrentMv, yCurrentMv,
+                                 &angle, &normRatio);
+            getAngleAndNormRatio(rev_gm,
+                                 xRevCurrentMv, yRevCurrentMv,
+                                 &rev_angle, &rev_normRatio);
 
             if (angle < 45)
                 globalMotionLcus++;
+
+            if (rev_normRatio > 0.5f && rev_normRatio < 2.f && rev_angle < 45)
+                rev_globalMotionLcus++;
 
             /*printf("angle: %f°, norm ratio: %f, %d %d - %d %d - %d\n",
                    angle, normRatio, xCurrentMv, yCurrentMv, gm.as_mv.col, gm.as_mv.row,
@@ -379,13 +428,23 @@ void DetectGlobalMotion(
     }
 
     float percentage = globalMotionLcus * 100 / checkedLcusCount;
-    printf("percentage: %f %d %d\n", percentage, globalMotionLcus, checkedLcusCount);
+    float rev_percentage = rev_globalMotionLcus * 100 / checkedLcusCount;
+    printf("percentage: %f %f\n", percentage, rev_percentage);
+
     if (checkedLcusCount > 0 && percentage > 75) {
-        printf("%ld: is_global_motion = EB_TRUE, global motion mode: %d, %f %% \n",
+        printf("%ld: is_global_motion = EB_TRUE, global motion mode: %d, %f\n",
                picture_control_set_ptr->picture_number,
                picture_control_set_ptr->global_motion_estimation.wmtype,
                percentage);
         picture_control_set_ptr->is_global_motion = EB_TRUE;
+    }
+
+    if (checkedLcusCount > 0 && rev_percentage > 75) {
+        printf("%ld: is_rev_global_motion = EB_TRUE, global motion mode: %d, %f\n",
+               picture_control_set_ptr->picture_number,
+               picture_control_set_ptr->rev_global_motion_estimation.wmtype,
+               rev_percentage);
+        picture_control_set_ptr->is_rev_global_motion = EB_TRUE;
     }
 }
 
@@ -450,6 +509,7 @@ void ReleasePaReferenceObjects(
 ** No lookahead information used in this function
 ************************************************/
 void MeBasedGlobalMotionDetection(
+    SequenceControlSet              *sequence_control_set_ptr,
     PictureParentControlSet         *picture_control_set_ptr)
 {
     // PAN Generation
@@ -457,7 +517,7 @@ void MeBasedGlobalMotionDetection(
     picture_control_set_ptr->is_tilt = EB_FALSE;
 
     if (picture_control_set_ptr->slice_type != I_SLICE)
-        DetectGlobalMotion(picture_control_set_ptr);
+        DetectGlobalMotion(sequence_control_set_ptr, picture_control_set_ptr);
     // Check if the motion vector field for temporal layer 0 pictures
     if (picture_control_set_ptr->slice_type != I_SLICE && picture_control_set_ptr->temporal_layer_index == 0)
         CheckForNonUniformMotionVectorField(picture_control_set_ptr);
@@ -1367,8 +1427,7 @@ void* initial_rate_control_kernel(void *input_ptr)
             encode_context_ptr = (EncodeContext*)sequence_control_set_ptr->encode_context_ptr;
             // Mark picture when global motion is detected using ME results
             //reset intraCodedEstimationLcu
-            MeBasedGlobalMotionDetection(
-                picture_control_set_ptr);
+            MeBasedGlobalMotionDetection(sequence_control_set_ptr, picture_control_set_ptr);
             // Release Pa Ref pictures when not needed
             ReleasePaReferenceObjects(
                 sequence_control_set_ptr,
@@ -1572,7 +1631,7 @@ void* initial_rate_control_kernel(void *input_ptr)
                         }
                         else {
                             if (picture_control_set_ptr->slice_type != I_SLICE)
-                                DetectGlobalMotion(picture_control_set_ptr);
+                                DetectGlobalMotion(sequence_control_set_ptr, picture_control_set_ptr);
                         }
 
                         // BACKGROUND ENHANCEMENT PART II

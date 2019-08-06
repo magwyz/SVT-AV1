@@ -1556,7 +1556,7 @@ MotionMode motion_mode_allowed(
         const TransformationType gm_type =
             picture_control_set_ptr->parent_pcs_ptr->global_motion[rf0].wmtype;
         if (is_global_mv_block_ent(mode, bsize, gm_type))
-            return WARPED_CAUSAL;
+            return SIMPLE_TRANSLATION;
     }
 
     if (is_motion_variation_allowed_bsize(bsize) &&
@@ -6173,6 +6173,12 @@ assert(bsize < BlockSizeS_ALL);
                 PredictionMode inter_mode = (PredictionMode)cu_ptr->prediction_unit_array[0].inter_mode;
                 const int32_t is_compound = (cu_ptr->prediction_unit_array[0].inter_pred_direction_index == BI_PRED);
 
+                if (inter_mode == GLOBALMV)
+                    printf("%ld %d - %d %d, mode: %d, bsize: %d, mv: %d %d\n",
+                           picture_control_set_ptr->picture_number, rf[0],
+                           mi_col, mi_row, inter_mode,
+                           bsize, cu_ptr->prediction_unit_array[0].mv[0].x, cu_ptr->prediction_unit_array[0].mv[0].y);
+
                 // If segment skip is not enabled code the mode.
                 if (1) {
                     if (is_inter_compound_mode(inter_mode)) {
@@ -6269,18 +6275,6 @@ assert(bsize < BlockSizeS_ALL);
                         rf[1],
                         cu_ptr,
                         picture_control_set_ptr);
-
-                    const PredictionMode mode = cu_ptr->prediction_unit_array[0].inter_mode;
-                    {
-                        MotionMode last_motion_mode_allowed =
-                            motion_mode_allowed(picture_control_set_ptr, cu_ptr, bsize, rf[0], rf[1], mode);
-                        if (mode == GLOBALMV)
-                            printf("%ld %d - %d %d, mode: %d, motion_mode: %d, last_motion_mode_allowed: %d, bsize: %d, mv: %d %d\n",
-                                   picture_control_set_ptr->picture_number, rf[0],
-                                   mi_col, mi_row, mode, cu_ptr->prediction_unit_array[0].motion_mode,
-                                   last_motion_mode_allowed, bsize,
-                                    cu_ptr->prediction_unit_array[0].mv[0].x, cu_ptr->prediction_unit_array[0].mv[0].y);
-                    }
                 }
 
                 if (sequence_control_set_ptr->seq_header.enable_masked_compound || sequence_control_set_ptr->seq_header.order_hint_info.enable_jnt_comp)

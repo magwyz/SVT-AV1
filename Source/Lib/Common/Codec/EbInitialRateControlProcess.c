@@ -372,9 +372,9 @@ void DetectGlobalMotion(
             if (angle < 45)
                 globalMotionLcus++;
 
-            printf("angle: %f°, norm ratio: %f, %d %d - %d %d - %d\n",
+            /*printf("angle: %f°, norm ratio: %f, %d %d - %d %d - %d\n",
                    angle, normRatio, xCurrentMv, yCurrentMv, gm.as_mv.col, gm.as_mv.row,
-                    picture_control_set_ptr->panMvx);
+                    picture_control_set_ptr->panMvx);*/
         }
     }
 

@@ -356,8 +356,6 @@ void SetGlobalMotionField(
 #if 1
     if (picture_control_set_ptr->parent_pcs_ptr->is_global_motion)
         picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME] = picture_control_set_ptr->parent_pcs_ptr->global_motion_estimation;
-    if (picture_control_set_ptr->parent_pcs_ptr->is_rev_global_motion)
-        picture_control_set_ptr->parent_pcs_ptr->global_motion[BWDREF_FRAME] = picture_control_set_ptr->parent_pcs_ptr->rev_global_motion_estimation;
 #else
     if (picture_control_set_ptr->parent_pcs_ptr->is_pan && picture_control_set_ptr->parent_pcs_ptr->is_tilt) {
         printf("pan tilt\n");

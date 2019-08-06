@@ -3972,22 +3972,6 @@ static void WriteGlobalMotion(
         //pcs_ptr->prev_frame ? &pcs_ptr->prev_frame->global_motion[frame] : &default_warp_params;
 #endif
 
-        /*printf("type: %d - %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
-               pcs_ptr->global_motion[frame].wmtype,
-               pcs_ptr->global_motion[frame].alpha,
-               pcs_ptr->global_motion[frame].beta ,
-               pcs_ptr->global_motion[frame].delta,
-               pcs_ptr->global_motion[frame].gamma,
-               pcs_ptr->global_motion[frame].invalid,
-               pcs_ptr->global_motion[frame].wmmat[0],
-               pcs_ptr->global_motion[frame].wmmat[1],
-               pcs_ptr->global_motion[frame].wmmat[2],
-               pcs_ptr->global_motion[frame].wmmat[3],
-               pcs_ptr->global_motion[frame].wmmat[4],
-               pcs_ptr->global_motion[frame].wmmat[5],
-               pcs_ptr->global_motion[frame].wmmat[6],
-               pcs_ptr->global_motion[frame].wmmat[7]);*/
-
         write_global_motion_params(&pcs_ptr->global_motion[frame], ref_params, wb,
             frm_hdr->allow_high_precision_mv);
         // TODO(sarahparker, debargha): The logic in the commented out code below
@@ -4005,13 +3989,6 @@ static void WriteGlobalMotion(
         "Invalid warp type for frames of different resolutions");
         }
         */
-
-        /*printf("Enc Ref %d: %d %d %d %d\n",
-        frame,
-        pcs_ptr->global_motion[frame].wmmat[0],
-        pcs_ptr->global_motion[frame].wmmat[1], pcs_ptr->global_motion[frame].wmmat[2],
-        pcs_ptr->global_motion[frame].wmmat[3]);*/
-
     }
 }
 
@@ -6172,12 +6149,6 @@ assert(bsize < BlockSizeS_ALL);
                 int16_t mode_ctx = Av1ModeContextAnalyzer(cu_ptr->inter_mode_ctx, rf);
                 PredictionMode inter_mode = (PredictionMode)cu_ptr->prediction_unit_array[0].inter_mode;
                 const int32_t is_compound = (cu_ptr->prediction_unit_array[0].inter_pred_direction_index == BI_PRED);
-
-                if (inter_mode == GLOBALMV)
-                    printf("%ld %d - %d %d, mode: %d, bsize: %d, mv: %d %d\n",
-                           picture_control_set_ptr->picture_number, rf[0],
-                           mi_col, mi_row, inter_mode,
-                           bsize, cu_ptr->prediction_unit_array[0].mv[0].x, cu_ptr->prediction_unit_array[0].mv[0].y);
 
                 // If segment skip is not enabled code the mode.
                 if (1) {

@@ -14,64 +14,25 @@ void global_motion_estimation(PictureParentControlSet *picture_control_set_ptr,
                               MeContext *context_ptr,
                               EbPictureBufferDesc *input_picture_ptr)
 {
-    uint32_t numOfListToSearch = (picture_control_set_ptr->slice_type == P_SLICE)
-                            ? (uint32_t)REF_LIST_0
-                            : (uint32_t)REF_LIST_1;
+    uint8_t num_of_ref_pic_to_search = AOMMIN(picture_control_set_ptr->ref_list0_count, 1);
 
-    printf("----- numOfListToSearch: %d\n", numOfListToSearch);
-    for (uint32_t listIndex = REF_LIST_0; listIndex <= numOfListToSearch; ++listIndex)
+    // Ref Picture Loop
+    for (uint32_t ref_pic_index = 0; ref_pic_index < num_of_ref_pic_to_search;
+         ++ref_pic_index)
     {
-        uint8_t num_of_ref_pic_to_search;
+        EbPaReferenceObject *referenceObject;
 
         if (context_ptr->me_alt_ref == EB_TRUE)
-            num_of_ref_pic_to_search = 1;
+            referenceObject = (EbPaReferenceObject *)context_ptr->alt_ref_reference_ptr;
         else
-            num_of_ref_pic_to_search =
-                (picture_control_set_ptr->slice_type == P_SLICE)
-                    ? picture_control_set_ptr->ref_list0_count
-                    : (listIndex == REF_LIST_0)
-                          ? picture_control_set_ptr->ref_list0_count
-                          : picture_control_set_ptr->ref_list1_count;
-
-        num_of_ref_pic_to_search = AOMMIN(num_of_ref_pic_to_search, 1);
-
-        printf("listIndex: %d, num_of_ref_pic_to_search: %d\n", listIndex, num_of_ref_pic_to_search);
-        // Ref Picture Loop
-        for (uint32_t ref_pic_index = 0; ref_pic_index < num_of_ref_pic_to_search;
-             ++ref_pic_index)
-        {
-            EbPaReferenceObject *referenceObject;
-
-            if (context_ptr->me_alt_ref == EB_TRUE)
-                referenceObject = (EbPaReferenceObject *)context_ptr->alt_ref_reference_ptr;
-            else
-                referenceObject = (EbPaReferenceObject *)picture_control_set_ptr
-                        ->ref_pa_pic_ptr_array[listIndex][ref_pic_index]->object_ptr;
+            referenceObject = (EbPaReferenceObject *)picture_control_set_ptr
+                    ->ref_pa_pic_ptr_array[REF_LIST_0][ref_pic_index]->object_ptr;
 
 
-            EbPictureBufferDesc *ref_picture_ptr = (EbPictureBufferDesc*)referenceObject->input_padded_picture_ptr;
+        EbPictureBufferDesc *ref_picture_ptr = (EbPictureBufferDesc*)referenceObject->input_padded_picture_ptr;
 
-            switch (listIndex) {
-            case REF_LIST_0:
-                compute_global_motion(input_picture_ptr, ref_picture_ptr, &picture_control_set_ptr->global_motion_estimation);
-                break;
-            case REF_LIST_1:
-                compute_global_motion(input_picture_ptr, ref_picture_ptr, &picture_control_set_ptr->rev_global_motion_estimation);
-                break;
-            default:
-                break;
-            }
-        }
+        compute_global_motion(input_picture_ptr, ref_picture_ptr, &picture_control_set_ptr->global_motion_estimation);
     }
-
-    IntMv gm = gm_get_motion_vector_enc(
-        &picture_control_set_ptr->global_motion_estimation,
-        0 /* allow_hp */,
-        BLOCK_8X8,
-        0, 0,
-        0 /* is_integer */);
-
-    printf("-> %d %d\n", gm.as_mv.col, gm.as_mv.row);
 }
 
 

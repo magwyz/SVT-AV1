@@ -1552,6 +1552,16 @@ static INLINE int is_inter_mode(PredictionMode mode)
     return mode >= SINGLE_INTER_MODE_START && mode < SINGLE_INTER_MODE_END;
 }
 
+static INLINE int is_global_mv_block_ent(
+    const PredictionMode          mode,
+    const BlockSize               bsize,
+    TransformationType            type)
+{
+    return (mode == GLOBALMV || mode == GLOBAL_GLOBALMV)
+            && type > TRANSLATION
+            && is_motion_variation_allowed_bsize(bsize);
+}
+
 #if OBMC_FLAG
 MotionMode obmc_motion_mode_allowed(
     const PictureControlSet         *picture_control_set_ptr,
@@ -1573,7 +1583,7 @@ MotionMode obmc_motion_mode_allowed(
     if (frm_hdr->force_integer_mv == 0) {
         const TransformationType gm_type =
             picture_control_set_ptr->parent_pcs_ptr->global_motion[rf0].wmtype;
-        if (is_global_mv_block(mode, bsize, gm_type))
+        if (is_global_mv_block_ent(mode, bsize, gm_type))
             return SIMPLE_TRANSLATION;
     }
 
@@ -1607,7 +1617,7 @@ MotionMode motion_mode_allowed(
     if (frm_hdr->force_integer_mv == 0) {
         const TransformationType gm_type =
             picture_control_set_ptr->parent_pcs_ptr->global_motion[rf0].wmtype;
-        if (is_global_mv_block(mode, bsize, gm_type))
+        if (is_global_mv_block_ent(mode, bsize, gm_type))
             return SIMPLE_TRANSLATION;
     }
 
@@ -1646,6 +1656,7 @@ static void write_motion_mode(
     PictureControlSet      *picture_control_set_ptr)
 {
     const PredictionMode mode = cu_ptr->prediction_unit_array[0].inter_mode;
+
     MotionMode last_motion_mode_allowed =
         motion_mode_allowed(picture_control_set_ptr, cu_ptr, bsize, rf0, rf1, mode);
 
@@ -3964,15 +3975,10 @@ static void write_global_motion_params(const EbWarpedMotionParams *params,
     struct AomWriteBitBuffer *wb,
     int32_t allow_hp) {
     const TransformationType type = params->wmtype;
-    assert(type == TRANSLATION || type == IDENTITY);
     eb_aom_wb_write_bit(wb, type != IDENTITY);
     if (type != IDENTITY) {
-#if GLOBAL_TRANS_TYPES > 4
-        eb_aom_wb_write_literal(wb, type - 1, GLOBAL_TYPE_BITS);
-#else
         eb_aom_wb_write_bit(wb, type == ROTZOOM);
         if (type != ROTZOOM) eb_aom_wb_write_bit(wb, type == TRANSLATION);
-#endif  // GLOBAL_TRANS_TYPES > 4
     }
 
     if (type >= ROTZOOM) {

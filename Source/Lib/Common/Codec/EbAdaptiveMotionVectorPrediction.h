@@ -156,6 +156,13 @@ extern "C" {
         const MacroBlockD *xd, int mi_row, int mi_col,
         BlockSize bsize, int mib_size_log2);
 
+    IntMv gm_get_motion_vector_enc(
+        const EbWarpedMotionParams *gm,
+        int32_t allow_hp,
+        BlockSize bsize,
+        int32_t mi_col, int32_t mi_row,
+        int32_t is_integer);
+
 #ifdef __cplusplus
 }
 #endif

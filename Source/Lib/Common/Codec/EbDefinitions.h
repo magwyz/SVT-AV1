@@ -1805,6 +1805,9 @@ typedef struct LoopFilterInfoN
 #define GM_TRANS_MIN -GM_TRANS_MAX
 #define GM_ALPHA_MIN -GM_ALPHA_MAX
 #define GM_ROW3HOMO_MIN -GM_ROW3HOMO_MAX
+
+#define USE_CUR_GM_REFMV 1
+
 /* clang-format off */
 typedef enum TransformationType
 {

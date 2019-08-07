@@ -20,6 +20,7 @@
 #include "emmintrin.h"
 
 #include "EbTemporalFiltering.h"
+#include "EbGlobalMotionEstimation.h"
 
 /* --32x32-
 |00||01|
@@ -626,6 +627,16 @@ void* motion_estimation_kernel(void *input_ptr)
         }
         if (inputResultsPtr->task_type == 0)
         {
+            // Global motion estimation
+#if 1
+            // Compute only for the first fragment.
+            // TODO: fix this, create an other kernel ?
+            if (inputResultsPtr->segment_index == 0)
+                global_motion_estimation(picture_control_set_ptr,
+                                         context_ptr->me_context_ptr,
+                                         input_picture_ptr);
+#endif
+
 
             // ME Kernel Signal(s) derivation
             signal_derivation_me_kernel_oq(

@@ -18,6 +18,7 @@
 
 #define WARP_ERROR_BLOCK 32
 
+
 /* clang-format off */
 const int error_measure_lut[512] = {
   // pow 0.7
@@ -838,8 +839,11 @@ static int64_t warp_error(EbWarpedMotionParams *wm, const uint8_t *const ref,
       warp_plane(wm, ref, width, height, stride, tmp, j, i, warp_w, warp_h,
                  WARP_ERROR_BLOCK, subsampling_x, subsampling_y, &conv_params);
 
-      gm_sumerr += eb_av1_calc_frame_error(tmp, WARP_ERROR_BLOCK, dst + j + i * p_stride,
-                               warp_w, warp_h, p_stride);
+      // FIXME: use the C version since we seem to have alignment issue with GMC
+      gm_sumerr += eb_av1_calc_frame_error_c(tmp, WARP_ERROR_BLOCK, dst + j + i * p_stride,
+                                             warp_w, warp_h, p_stride);
+      /* gm_sumerr += av1_calc_frame_error_c(tmp, WARP_ERROR_BLOCK, dst + j + i * p_stride,
+                                           warp_w, warp_h, p_stride);*/
       if (gm_sumerr > best_error) return gm_sumerr;
     }
   }
@@ -853,7 +857,9 @@ int64_t eb_av1_frame_error(int use_hbd, int bd, const uint8_t *ref, int stride,
                               CONVERT_TO_SHORTPTR(dst), p_width, p_height,
                               p_stride, bd);
   }
-  return eb_av1_calc_frame_error(ref, stride, dst, p_width, p_height, p_stride);
+  // FIXME: use the C version since we seem to have alignment issue with GMC
+  return eb_av1_calc_frame_error_c(ref, stride, dst, p_width, p_height, p_stride);
+  //return eb_av1_calc_frame_error(ref, stride, dst, p_width, p_height, p_stride);
 }
 
 int64_t eb_av1_warp_error(EbWarpedMotionParams *wm, int use_hbd, int bd,

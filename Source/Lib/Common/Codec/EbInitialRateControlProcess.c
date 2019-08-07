@@ -215,6 +215,18 @@ void CheckForNonUniformMotionVectorField(
     }
 }
 
+
+float getAngleBetweenMvs(IntMv gm, int32_t xCurrentMv, int32_t yCurrentMv)
+{
+    float scalar_product = xCurrentMv * gm.as_mv.col + yCurrentMv * gm.as_mv.row;
+    float normCurrentMv = sqrt(xCurrentMv * xCurrentMv + yCurrentMv * yCurrentMv);
+    float normGlobalMv = sqrt(gm.as_mv.col * gm.as_mv.col + gm.as_mv.row * gm.as_mv.row);
+    float cosine = normCurrentMv > 0 && normGlobalMv > 0 ?
+                scalar_product / (normCurrentMv * normGlobalMv) : 1.f;
+    return cosine >= 1.f ? 0.f : acos(cosine) * 180 / M_PI;
+}
+
+
 void DetectGlobalMotion(
     PictureParentControlSet    *picture_control_set_ptr)
 {
@@ -342,6 +354,45 @@ void DetectGlobalMotion(
             picture_control_set_ptr->tiltMvy = (int16_t)(yTiltMvSum / totalTiltLcus);
         }
     }
+
+    unsigned checkedLcusCount = 0;
+    unsigned globalMotionLcus = 0;
+
+    picture_control_set_ptr->is_global_motion = EB_FALSE;
+
+    for (sb_count = 0; sb_count < picture_control_set_ptr->sb_total_count; ++sb_count) {
+        sb_origin_x = (sb_count % picture_width_in_sb) * BLOCK_SIZE_64;
+        sb_origin_y = (sb_count / picture_width_in_sb) * BLOCK_SIZE_64;
+        if (((sb_origin_x + BLOCK_SIZE_64) <= picture_control_set_ptr->enhanced_picture_ptr->width) &&
+            ((sb_origin_y + BLOCK_SIZE_64) <= picture_control_set_ptr->enhanced_picture_ptr->height)) {
+            // Current MV
+            GetMv(picture_control_set_ptr, sb_count, &xCurrentMv, &yCurrentMv);
+            xCurrentMv *= 2;
+            yCurrentMv *= 2;
+
+            // MV from global motion
+            IntMv gm = gm_get_motion_vector_enc(
+                &picture_control_set_ptr->global_motion_estimation,
+                0 /* allow_hp */,
+                BLOCK_64X64,
+                sb_origin_x / MI_SIZE, sb_origin_y / MI_SIZE,
+                0 /* is_integer */);
+
+            checkedLcusCount++;
+
+            // Check if global motion match current vector
+            float angle = getAngleBetweenMvs(gm, xCurrentMv, yCurrentMv);
+
+            if (angle < 45)
+                globalMotionLcus++;
+        }
+    }
+
+    float percentage = globalMotionLcus * 100 / checkedLcusCount;
+
+    if (checkedLcusCount > 0 && percentage > 75
+        && picture_control_set_ptr->global_motion_estimation.wmtype > TRANSLATION)
+        picture_control_set_ptr->is_global_motion = EB_TRUE;
 }
 
 /************************************************

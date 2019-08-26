@@ -12,11 +12,6 @@
 #ifndef AOM_AV1_ENCODER_GLOBAL_MOTION_H_
 #define AOM_AV1_ENCODER_GLOBAL_MOTION_H_
 
-#include "aom/aom_integer.h"
-//#include "aom_scale/yv12config.h"
-//#include "av1/common/mv.h"
-//#include "av1/common/warped_motion.h"
-
 #include "EbDefinitions.h"
 #include "EbPictureBufferDesc.h"
 

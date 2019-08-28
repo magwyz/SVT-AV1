@@ -2040,11 +2040,16 @@ EbErrorType av1_inter_prediction_hbd(
 }
 
 
+/*****************
+ * OBMC
+ *****************/
+
+
 struct build_prediction_ctxt {
-  int mi_rows;
-  int mi_cols;
-  int mi_row;
-  int mi_col;
+  ModeDecisionContext *md_context_ptr;
+  PictureControlSet *picture_control_set_ptr;
+  ModeDecisionCandidateBuffer *candidate_buffer_ptr;
+  EbAsm asm_type;
   uint8_t **tmp_buf;
   int *tmp_width;
   int *tmp_height;
@@ -2053,22 +2058,195 @@ struct build_prediction_ctxt {
 };
 
 
+void av1_modify_neighbor_predictor_for_obmc(MbModeInfo *mbmi) {
+  mbmi->ref_frame[1] = NONE_FRAME;
+  mbmi->interinter_comp.type = COMPOUND_AVERAGE;
+
+  return;
+}
+
+void av1_setup_build_prediction_by_above_pred(
+    MacroBlockD *xd, int rel_mi_col, uint8_t above_mi_width,
+    MbModeInfo *above_mbmi, struct build_prediction_ctxt *ctxt,
+    const int num_planes) {
+  const BlockSize a_bsize = AOMMAX(BLOCK_8X8, above_mbmi->sb_type);
+  const int above_mi_col = ctxt->mi_col + rel_mi_col;
+
+  av1_modify_neighbor_predictor_for_obmc(above_mbmi);
+
+  for (int j = 0; j < num_planes; ++j) {
+    struct macroblockd_plane *const pd = &xd->plane[j];
+    setup_pred_plane(&pd->dst, a_bsize, ctxt->tmp_buf[j], ctxt->tmp_width[j],
+                     ctxt->tmp_height[j], ctxt->tmp_stride[j], 0, rel_mi_col,
+                     NULL, pd->subsampling_x, pd->subsampling_y);
+  }
+
+  const int num_refs = 1 + has_second_ref(above_mbmi);
+
+  //for (int ref = 0; ref < num_refs; ++ref) {
+    const MvReferenceFrame frame = above_mbmi->ref_frame[0];
+
+    const RefCntBuffer *const ref_buf = get_ref_frame_buf(ctxt->cm, frame);
+    const struct scale_factors *const sf =
+        get_ref_scale_factors_const(ctxt->cm, frame);
+    xd->block_ref_scale_factors[ref] = sf;
+
+    /*if ((!av1_is_valid_scale(sf)))
+      aom_internal_error(xd->error_info, AOM_CODEC_UNSUP_BITSTREAM,
+                         "Reference frame has invalid dimensions");*/
+
+    av1_setup_pre_planes(xd, ref, &ref_buf->buf, ctxt->mi_row, above_mi_col, sf,
+                         num_planes);
+  //}
+
+  xd->mb_to_left_edge = 8 * MI_SIZE * (-above_mi_col);
+  xd->mb_to_right_edge = ctxt->mb_to_far_edge +
+                         (xd->n4_w - rel_mi_col - above_mi_width) * MI_SIZE * 8;
+}
+
+void av1_setup_build_prediction_by_left_pred(MacroBlockD *xd, int rel_mi_row,
+                                             uint8_t left_mi_height,
+                                             MbModeInfo *left_mbmi,
+                                             struct build_prediction_ctxt *ctxt,
+                                             const int num_planes) {
+  const BLOCK_SIZE l_bsize = AOMMAX(BLOCK_8X8, left_mbmi->sb_type);
+  const int left_mi_row = ctxt->mi_row + rel_mi_row;
+
+  av1_modify_neighbor_predictor_for_obmc(left_mbmi);
+
+  for (int j = 0; j < num_planes; ++j) {
+    struct macroblockd_plane *const pd = &xd->plane[j];
+    setup_pred_plane(&pd->dst, l_bsize, ctxt->tmp_buf[j], ctxt->tmp_width[j],
+                     ctxt->tmp_height[j], ctxt->tmp_stride[j], rel_mi_row, 0,
+                     NULL, pd->subsampling_x, pd->subsampling_y);
+  }
+
+  const int num_refs = 1 + has_second_ref(left_mbmi);
+
+  for (int ref = 0; ref < num_refs; ++ref) {
+    const MV_REFERENCE_FRAME frame = left_mbmi->ref_frame[ref];
+
+    const RefCntBuffer *const ref_buf = get_ref_frame_buf(ctxt->cm, frame);
+    const struct scale_factors *const ref_scale_factors =
+        get_ref_scale_factors_const(ctxt->cm, frame);
+
+    xd->block_ref_scale_factors[ref] = ref_scale_factors;
+    if ((!av1_is_valid_scale(ref_scale_factors)))
+      aom_internal_error(xd->error_info, AOM_CODEC_UNSUP_BITSTREAM,
+                         "Reference frame has invalid dimensions");
+    av1_setup_pre_planes(xd, ref, &ref_buf->buf, left_mi_row, ctxt->mi_col,
+                         ref_scale_factors, num_planes);
+  }
+
+  xd->mb_to_top_edge = 8 * MI_SIZE * (-left_mi_row);
+  xd->mb_to_bottom_edge =
+      ctxt->mb_to_far_edge +
+      (xd->n4_h - rel_mi_row - left_mi_height) * MI_SIZE * 8;
+}
+
+
+typedef void (*overlappable_nb_visitor_t)(MacroBlockD *xd, int rel_mi_pos,
+                                          uint8_t nb_mi_size,
+                                          ModeInfo *nb_mi, void *fun_ctxt,
+                                          const int num_planes);
+
+static INLINE void foreach_overlappable_nb_above(ModeDecisionContext *md_context_ptr,
+                                                 PictureControlSet *picture_control_set_ptr,
+                                                 int nb_max,
+                                                 overlappable_nb_visitor_t fun,
+                                                 void *fun_ctxt) {
+  MacroBlockD *xd = md_context_ptr->cu_ptr->av1xd;
+  int32_t mi_col = md_context_ptr->cu_origin_x >> MI_SIZE_LOG2;
+  int32_t mi_cols = picture_control_set_ptr->parent_pcs_ptr->av1_cm->mi_cols;
+
+  const int num_planes = 3; //av1_num_planes(cm);
+  if (!xd->up_available) return;
+
+  int nb_count = 0;
+
+  // prev_row_mi points into the mi array, starting at the beginning of the
+  // previous row.
+  ModeInfo **prev_row_mi = xd->mi - mi_col - 1 * xd->mi_stride;
+  const int end_col = AOMMIN(mi_col + xd->n4_w, mi_cols);
+  uint8_t mi_step;
+  for (int above_mi_col = mi_col; above_mi_col < end_col && nb_count < nb_max;
+       above_mi_col += mi_step) {
+    ModeInfo **above_mi = prev_row_mi + above_mi_col;
+    mi_step =
+        AOMMIN(mi_size_wide[above_mi[0]->mbmi.sb_type], mi_size_wide[BLOCK_64X64]);
+    // If we're considering a block with width 4, it should be treated as
+    // half of a pair of blocks with chroma information in the second. Move
+    // above_mi_col back to the start of the pair if needed, set above_mbmi
+    // to point at the block with chroma information, and set mi_step to 2 to
+    // step over the entire pair at the end of the iteration.
+    if (mi_step == 1) {
+      above_mi_col &= ~1;
+      above_mi = prev_row_mi + above_mi_col + 1;
+      mi_step = 2;
+    }
+    if (is_neighbor_overlappable(&(*above_mi)->mbmi)) {
+      ++nb_count;
+      fun(xd, above_mi_col - mi_col, AOMMIN(xd->n4_w, mi_step), *above_mi,
+          fun_ctxt, num_planes);
+    }
+  }
+}
+
+static INLINE void foreach_overlappable_nb_left(ModeDecisionContext *md_context_ptr,
+                                                PictureControlSet *picture_control_set_ptr,
+                                                int nb_max,
+                                                overlappable_nb_visitor_t fun,
+                                                void *fun_ctxt) {
+  MacroBlockD *xd = md_context_ptr->cu_ptr->av1xd;
+  int32_t mi_row = md_context_ptr->cu_origin_y >> MI_SIZE_LOG2;
+  int32_t mi_rows = picture_control_set_ptr->parent_pcs_ptr->av1_cm->mi_rows;
+
+
+  const int num_planes = 3; //av1_num_planes(cm);
+  if (!xd->left_available) return;
+
+  int nb_count = 0;
+
+  // prev_col_mi points into the mi array, starting at the top of the
+  // previous column
+  ModeInfo **prev_col_mi = xd->mi - 1 - mi_row * xd->mi_stride;
+  const int end_row = AOMMIN(mi_row + xd->n4_h, mi_rows);
+  uint8_t mi_step;
+  for (int left_mi_row = mi_row; left_mi_row < end_row && nb_count < nb_max;
+       left_mi_row += mi_step) {
+    ModeInfo **left_mi = prev_col_mi + left_mi_row * xd->mi_stride;
+    mi_step =
+        AOMMIN(mi_size_high[left_mi[0]->mbmi.sb_type], mi_size_high[BLOCK_64X64]);
+    if (mi_step == 1) {
+      left_mi_row &= ~1;
+      left_mi = prev_col_mi + (left_mi_row + 1) * xd->mi_stride;
+      mi_step = 2;
+    }
+    if (is_neighbor_overlappable(&(*left_mi)->mbmi)) {
+      ++nb_count;
+      fun(xd, left_mi_row - mi_row, AOMMIN(xd->n4_h, mi_step), *left_mi,
+          fun_ctxt, num_planes);
+    }
+  }
+}
+
+
 // input: log2 of length, 0(4), 1(8), ...
 static const int max_neighbor_obmc[6] = { 0, 1, 2, 3, 4, 4 };
 
 
 static INLINE void build_prediction_by_above_pred(
     MacroBlockD *xd, int rel_mi_col, uint8_t above_mi_width,
-    MbModeInfo *above_mbmi, void *fun_ctxt, const int num_planes) {
+    ModeInfo *above_mbmi, void *fun_ctxt, const int num_planes) {
   struct build_prediction_ctxt *ctxt = (struct build_prediction_ctxt *)fun_ctxt;
-  const int above_mi_col = ctxt->mi_col + rel_mi_col;
-  int mi_x, mi_y;
-  MbModeInfo backup_mbmi = *above_mbmi;
+
+  int32_t mi_col = ctxt->md_context_ptr->cu_origin_x >> MI_SIZE_LOG2;
+
+  const int above_mi_col = mi_col + rel_mi_col;
+  MbModeInfo backup_mbmi = (*above_mbmi).mbmi;
 
   av1_setup_build_prediction_by_above_pred(xd, rel_mi_col, above_mi_width,
                                            &backup_mbmi, ctxt, num_planes);
-  mi_x = above_mi_col << MI_SIZE_LOG2;
-  mi_y = ctxt->mi_row << MI_SIZE_LOG2;
 
   const BlockSize bsize = xd->mi[0]->mbmi.sb_type;
 
@@ -2079,14 +2257,34 @@ static INLINE void build_prediction_by_above_pred(
                    block_size_high[BLOCK_64X64] >> (pd->subsampling_y + 1));
 
     if (av1_skip_u4x4_pred_in_obmc(bsize, pd, 0)) continue;
-    build_inter_predictors(ctxt->cm, xd, j, &backup_mbmi, 1, bw, bh, mi_x,
-                           mi_y);
+    /*build_inter_predictors(ctxt->cm, xd, j, &backup_mbmi, 1, bw, bh, mi_x,
+                           mi_y);*/
+
+    av1_inter_prediction(
+        picture_control_set_ptr,
+        candidate_buffer_ptr->candidate_ptr->interp_filters,
+        md_context_ptr->cu_ptr,
+        candidate_buffer_ptr->candidate_ptr->ref_frame_type,
+        &mv_unit,
+        0,
+        md_context_ptr->cu_origin_x,
+        md_context_ptr->cu_origin_y,
+        bw,
+        bh,
+        ref_pic_list0,
+        ref_pic_list1,
+        prediction_ptr,
+        md_context_ptr->blk_geom->origin_x,
+        md_context_ptr->blk_geom->origin_y,
+        use_uv,
+        asm_type);
   }
 }
 
-void av1_build_prediction_by_above_preds(int mi_rows, int mi_cols,
-                                         MacroBlockD *xd,
-                                         int mi_row, int mi_col,
+void av1_build_prediction_by_above_preds(ModeDecisionContext *md_context_ptr,
+                                         PictureControlSet *picture_control_set_ptr,
+                                         ModeDecisionCandidateBuffer *candidate_buffer_ptr,
+                                         EbAsm asm_type,
                                          uint8_t *tmp_buf[MAX_MB_PLANE],
                                          int tmp_width[MAX_MB_PLANE],
                                          int tmp_height[MAX_MB_PLANE],
@@ -2100,13 +2298,18 @@ void av1_build_prediction_by_above_preds(int mi_rows, int mi_cols,
   int pred_height = AOMMIN(this_height / 2, 32);
   xd->mb_to_bottom_edge += (this_height - pred_height) * 8;
 
-  struct build_prediction_ctxt ctxt = { mi_rows,    mi_cols,
-                                        mi_row,
-                                        mi_col,     tmp_buf,
+  struct build_prediction_ctxt ctxt = { md_context_ptr,
+                                        picture_control_set_ptr,
+                                        candidate_buffer_ptr,
+                                        asm_type,
+                                        tmp_buf,
                                         tmp_width,  tmp_height,
                                         tmp_stride, xd->mb_to_right_edge };
   BlockSize bsize = xd->mi[0]->mbmi.sb_type;
-  foreach_overlappable_nb_above(mi_rows, mi_cols, xd, mi_col,
+  foreach_overlappable_nb_above(md_context_ptr,
+                                picture_control_set_ptr,
+                                candidate_buffer_ptr,
+                                asm_type,
                                 max_neighbor_obmc[mi_size_wide_log2[bsize]],
                                 build_prediction_by_above_pred, &ctxt);
 
@@ -2132,7 +2335,7 @@ void av1_build_prediction_by_left_preds(int mi_rows, int mi_cols,
   int pred_width = AOMMIN(this_width / 2, 32);
   xd->mb_to_right_edge += (this_width - pred_width) * 8;
 
-  struct build_prediction_ctxt ctxt = { cm,         mi_row,
+  struct build_prediction_ctxt ctxt = { mi_row,
                                         mi_col,     tmp_buf,
                                         tmp_width,  tmp_height,
                                         tmp_stride, xd->mb_to_bottom_edge };
@@ -2323,17 +2526,10 @@ void av1_build_obmc_inter_prediction(int mi_rows, int mi_cols,
 
 
 EbErrorType obmc_motion_prediction(
-        uint16_t                             pu_origin_x,
-        uint16_t                             pu_origin_y,
-        CodingUnit                           *cu_ptr,
-        const BlockGeom                      *blk_geom,
-        EbPictureBufferDesc                  *ref_pic_list0,
-        EbPictureBufferDesc                  *prediction_ptr,
-        uint16_t                             dst_origin_x,
-        uint16_t                             dst_origin_y,
-        uint8_t                              bit_depth,
-        EbBool                               perform_chroma,
-        EbAsm                                asm_type)
+    ModeDecisionContext                  *md_context_ptr,
+    PictureControlSet                    *picture_control_set_ptr,
+    ModeDecisionCandidateBuffer          *candidate_buffer_ptr,
+    EbAsm                                asm_type)
 {
   const int num_planes = 3; //av1_num_planes(cm)
   uint8_t *dst_buf1[MAX_MB_PLANE], *dst_buf2[MAX_MB_PLANE];
@@ -2368,11 +2564,6 @@ EbErrorType obmc_motion_prediction(
     dst_buf2[1] = tmp_obmc_bufs[1] + MAX_SB_SQUARE;
     dst_buf2[2] = tmp_obmc_bufs[1] + MAX_SB_SQUARE * 2;
   }
-
-  int mi_rows = prediction_ptr->max_height / 4;
-  int mi_cols = prediction_ptr->max_width / 4;
-  int mi_row = pu_origin_y;
-  int mi_col = pu_origin_x;
 
   av1_build_prediction_by_above_preds(mi_rows, mi_cols,
                                       xd, mi_row, mi_col, dst_buf1,

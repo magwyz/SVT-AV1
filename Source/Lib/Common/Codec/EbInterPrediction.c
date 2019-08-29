@@ -1183,7 +1183,8 @@ EbErrorType av1_inter_prediction(
     uint16_t                                dst_origin_x,
     uint16_t                                dst_origin_y,
     EbBool                                  perform_chroma,
-    EbAsm                                   asm_type)
+    EbAsm                                   asm_type,
+    int                                     build_for_obmc)
 {
     (void)asm_type;
     EbErrorType  return_error = EB_ErrorNone;
@@ -1261,8 +1262,6 @@ EbErrorType av1_inter_prediction(
                 }
             }
         }
-
-        int32_t build_for_obmc = 0;
 
         const BlockSize bsize = blk_geom->bsize;//mi->sb_type;
         assert(bsize < BlockSizeS_ALL);
@@ -1614,7 +1613,8 @@ EbErrorType av1_inter_prediction_hbd(
     uint16_t                                  dst_origin_x,
     uint16_t                                  dst_origin_y,
     uint8_t                                   bit_depth,
-    EbAsm                                  asm_type)
+    EbAsm                                     asm_type,
+    int                                       build_for_obmc)
 {
     (void)asm_type;
     EbErrorType  return_error = EB_ErrorNone;
@@ -1692,8 +1692,6 @@ EbErrorType av1_inter_prediction_hbd(
                 }
             }
         }
-
-        int32_t build_for_obmc = 0;
 
         const BlockSize bsize = blk_geom->bsize;//mi->sb_type;
         assert(bsize < BlockSizeS_ALL);
@@ -2379,7 +2377,8 @@ static INLINE void build_prediction_by_above_pred(
         ctxt->md_context_ptr->blk_geom->origin_x,
         ctxt->md_context_ptr->blk_geom->origin_y,
         ctxt->md_context_ptr->chroma_level <= CHROMA_MODE_1,
-        ctxt->asm_type);
+        ctxt->asm_type,
+        1);
   }
 }
 
@@ -2475,7 +2474,8 @@ static INLINE void build_prediction_by_left_pred(
         ctxt->md_context_ptr->blk_geom->origin_x,
         ctxt->md_context_ptr->blk_geom->origin_y,
         ctxt->md_context_ptr->chroma_level <= CHROMA_MODE_1,
-        ctxt->asm_type);
+        ctxt->asm_type,
+        1);
   }
 }
 
@@ -3790,7 +3790,8 @@ static const int32_t filter_sets[DUAL_FILTER_SET_SIZE][2] = {
         md_context_ptr->blk_geom->origin_x,
         md_context_ptr->blk_geom->origin_y,
         use_uv,
-        asm_type);
+        asm_type,
+        0);
 
     model_rd_for_sb(
         picture_control_set_ptr,
@@ -3864,7 +3865,8 @@ static const int32_t filter_sets[DUAL_FILTER_SET_SIZE][2] = {
                         md_context_ptr->blk_geom->origin_x,
                         md_context_ptr->blk_geom->origin_y,
                         use_uv,
-                        asm_type);
+                        asm_type,
+                        0);
 
                     model_rd_for_sb(
                         picture_control_set_ptr,
@@ -3937,7 +3939,8 @@ static const int32_t filter_sets[DUAL_FILTER_SET_SIZE][2] = {
                         md_context_ptr->blk_geom->origin_x,
                         md_context_ptr->blk_geom->origin_y,
                         use_uv,
-                        asm_type);
+                        asm_type,
+                        0);
 
                     model_rd_for_sb(
                         picture_control_set_ptr,
@@ -4012,7 +4015,8 @@ static const int32_t filter_sets[DUAL_FILTER_SET_SIZE][2] = {
                         md_context_ptr->blk_geom->origin_x,
                         md_context_ptr->blk_geom->origin_y,
                         use_uv,
-                        asm_type);
+                        asm_type,
+                        0);
 
                     model_rd_for_sb(
                         picture_control_set_ptr,
@@ -4090,13 +4094,16 @@ EbErrorType inter_pu_prediction_av1(
     int32_t rs = 0;
     int64_t rd = INT64_MAX;
 
-    obmc_motion_prediction(
-        md_context_ptr,
-        picture_control_set_ptr,
-        candidate_buffer_ptr,
-        asm_type,
-        (uint8_t) sequence_control_set_ptr->static_config.encoder_bit_depth);
-    return return_error;
+    if (candidate_ptr->motion_mode == OBMC_CAUSAL)
+    {
+        obmc_motion_prediction(
+            md_context_ptr,
+            picture_control_set_ptr,
+            candidate_buffer_ptr,
+            asm_type,
+            (uint8_t) sequence_control_set_ptr->static_config.encoder_bit_depth);
+        return return_error;
+    }
 
     if (candidate_buffer_ptr->candidate_ptr->use_intrabc)
     {
@@ -4118,7 +4125,8 @@ EbErrorType inter_pu_prediction_av1(
             md_context_ptr->blk_geom->origin_x,
             md_context_ptr->blk_geom->origin_y,
             md_context_ptr->chroma_level <= CHROMA_MODE_1,
-            asm_type);
+            asm_type,
+            0);
         return return_error;
     }
 
@@ -4228,7 +4236,8 @@ EbErrorType inter_pu_prediction_av1(
             md_context_ptr->blk_geom->origin_x,
             md_context_ptr->blk_geom->origin_y,
         md_context_ptr->chroma_level <= CHROMA_MODE_1,
-        asm_type);
+        asm_type,
+        0);
     return return_error;
 }
 

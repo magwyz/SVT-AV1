@@ -1411,6 +1411,8 @@ uint64_t av1_inter_fast_cost(
         && rf[1] != INTRA_FRAME)
     {
         MotionMode motion_mode_rd = candidate_ptr->motion_mode;
+        if (motion_mode_rd != SIMPLE_TRANSLATION)
+            printf("coucou!\n");
         BlockSize bsize = blk_geom->bsize;
         cu_ptr->prediction_unit_array[0].num_proj_ref = candidate_ptr->num_proj_ref;
         MotionMode last_motion_mode_allowed = motion_mode_allowed(

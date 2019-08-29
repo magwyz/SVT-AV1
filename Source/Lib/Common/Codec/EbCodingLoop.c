@@ -2693,7 +2693,8 @@ EB_EXTERN void av1_encode_pass(
                                         context_ptr->cu_origin_x,
                                         context_ptr->cu_origin_y,
                                         (uint8_t)sequence_control_set_ptr->static_config.encoder_bit_depth,
-                                        asm_type);
+                                        asm_type,
+                                        0);
                                 else
                                 av1_inter_prediction(
                                     picture_control_set_ptr,
@@ -2712,7 +2713,8 @@ EB_EXTERN void av1_encode_pass(
                                     context_ptr->cu_origin_x,
                                     context_ptr->cu_origin_y,
                                     EB_TRUE,
-                                    asm_type);
+                                    asm_type,
+                                    0);
                             }
                             else
                             {
@@ -3154,6 +3156,9 @@ EB_EXTERN void av1_encode_pass(
                                 asm_type);
                         }
 
+                        if (pu_ptr->motion_mode == OBMC_CAUSAL)
+                            printf("stop!\n");
+
                         if (doMC &&
                             pu_ptr->motion_mode != WARPED_CAUSAL)
                         {
@@ -3174,7 +3179,8 @@ EB_EXTERN void av1_encode_pass(
                                     context_ptr->cu_origin_x,
                                     context_ptr->cu_origin_y,
                                     (uint8_t)sequence_control_set_ptr->static_config.encoder_bit_depth,
-                                    asm_type);
+                                    asm_type,
+                                    pu_ptr->motion_mode == OBMC_CAUSAL);
                             } else {
                                 av1_inter_prediction(
                                     picture_control_set_ptr,
@@ -3193,7 +3199,8 @@ EB_EXTERN void av1_encode_pass(
                                     context_ptr->cu_origin_x,
                                     context_ptr->cu_origin_y,
                                     EB_TRUE,
-                                    asm_type);
+                                    asm_type,
+                                    pu_ptr->motion_mode == OBMC_CAUSAL);
                             }
                         }
                     }

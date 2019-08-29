@@ -1597,12 +1597,15 @@ static void write_motion_mode(
     MotionMode last_motion_mode_allowed =
         motion_mode_allowed(picture_control_set_ptr, cu_ptr, bsize, rf0, rf1, mode);
 
+    if (motion_mode == OBMC_CAUSAL)
+        printf("OBMC_CAUSAL\n");
+
     switch (last_motion_mode_allowed) {
     case SIMPLE_TRANSLATION: break;
     case OBMC_CAUSAL:
         aom_write_symbol(
             ec_writer,
-            SIMPLE_TRANSLATION, // motion_mode == OBMC_CAUSAL, TODO: support OBMC
+            motion_mode == OBMC_CAUSAL,
             frame_context->obmc_cdf[bsize],
             2);
         break;

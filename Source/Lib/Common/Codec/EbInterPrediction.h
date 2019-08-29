@@ -43,8 +43,7 @@ extern "C" {
         const ScaleFactors *sf, int32_t w, int32_t h, ConvolveParams *conv_params,
         InterpFilters interp_filters, int32_t is_intrabc, int32_t bd);
 
-    EbErrorType av1_inter_prediction(
-        PictureControlSet                    *picture_control_set_ptr,
+    EbErrorType av1_inter_prediction(PictureControlSet                    *picture_control_set_ptr,
         uint32_t                                interp_filters,
         CodingUnit                           *cu_ptr,
         uint8_t                                 ref_frame_type,
@@ -60,7 +59,8 @@ extern "C" {
         uint16_t                                dst_origin_x,
         uint16_t                                dst_origin_y,
         EbBool                                  perform_chroma,
-        EbAsm                                   asm_type);
+        EbAsm                                   asm_type,
+        int                                     build_for_obmc);
 
     EbErrorType inter_pu_prediction_av1(
         struct ModeDecisionContext           *md_context_ptr,
@@ -84,7 +84,8 @@ extern "C" {
         uint16_t                                dst_origin_x,
         uint16_t                                dst_origin_y,
         uint8_t                                 bit_depth,
-        EbAsm                                   asm_type);
+        EbAsm                                   asm_type,
+        int                                     build_for_obmc);
 
     EbErrorType choose_mvp_idx_v2(
         ModeDecisionCandidate               *candidate_ptr,

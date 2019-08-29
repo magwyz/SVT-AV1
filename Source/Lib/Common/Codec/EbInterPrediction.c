@@ -2139,8 +2139,10 @@ void get_ref_frame_bufs(struct build_prediction_ctxt *ctxt,
     get_ref_pic_list(ctxt->picture_control_set_ptr, ctxt->candidate_buffer_ptr,
                      &ref_pic_list0, &ref_pic_list1);
 
-    link_Eb_to_aom_buffer_desc_8bit(ref_pic_list0, buf_ref_0);
-    link_Eb_to_aom_buffer_desc_8bit(ref_pic_list1, buf_ref_1);
+    if (ref_pic_list0 != NULL)
+        link_Eb_to_aom_buffer_desc_8bit(ref_pic_list0, buf_ref_0);
+    if (ref_pic_list1 != NULL)
+        link_Eb_to_aom_buffer_desc_8bit(ref_pic_list1, buf_ref_1);
 }
 
 
@@ -2848,7 +2850,8 @@ EbErrorType obmc_motion_prediction(
   pd[2].is16Bit = bit_depth > 8;
 
   eb_av1_setup_dst_planes(pd, xd->mi[0]->mbmi.sb_type,
-      ref_pic_list0, mi_row, mi_col, 0, num_planes);
+      picture_control_set_ptr->parent_pcs_ptr->enhanced_picture_ptr,
+      mi_row, mi_col, 0, num_planes);
 
   av1_build_obmc_inter_prediction(md_context_ptr, picture_control_set_ptr,
                                   dst_buf1, dst_stride1,
@@ -4086,6 +4089,14 @@ EbErrorType inter_pu_prediction_av1(
     int32_t skip_txfm_sb = 0;
     int32_t rs = 0;
     int64_t rd = INT64_MAX;
+
+    obmc_motion_prediction(
+        md_context_ptr,
+        picture_control_set_ptr,
+        candidate_buffer_ptr,
+        asm_type,
+        (uint8_t) sequence_control_set_ptr->static_config.encoder_bit_depth);
+    return return_error;
 
     if (candidate_buffer_ptr->candidate_ptr->use_intrabc)
     {

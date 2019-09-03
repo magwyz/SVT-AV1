@@ -1411,8 +1411,6 @@ uint64_t av1_inter_fast_cost(
         && rf[1] != INTRA_FRAME)
     {
         MotionMode motion_mode_rd = candidate_ptr->motion_mode;
-        if (motion_mode_rd != SIMPLE_TRANSLATION)
-            printf("coucou!\n");
         BlockSize bsize = blk_geom->bsize;
         cu_ptr->prediction_unit_array[0].num_proj_ref = candidate_ptr->num_proj_ref;
         MotionMode last_motion_mode_allowed = motion_mode_allowed(
@@ -1426,7 +1424,7 @@ uint64_t av1_inter_fast_cost(
         switch (last_motion_mode_allowed) {
         case SIMPLE_TRANSLATION: break;
         case OBMC_CAUSAL:
-            assert(motion_mode_rd == SIMPLE_TRANSLATION); // TODO: remove when OBMC added
+            //assert(motion_mode_rd == SIMPLE_TRANSLATION); // TODO: remove when OBMC added
             interModeBitsNum += candidate_ptr->md_rate_estimation_ptr->motion_mode_fac_bits1[bsize][motion_mode_rd];
             break;
         default:

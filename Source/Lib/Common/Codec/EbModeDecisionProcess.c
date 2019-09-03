@@ -461,11 +461,13 @@ void reset_mode_decision(
 #endif
 
     EbBool enable_wm = (picture_control_set_ptr->parent_pcs_ptr->enc_mode <= ENC_M5) || MR_MODE ? EB_TRUE : EB_FALSE;
+    EbBool enable_obmc = EB_TRUE;
     enable_wm = picture_control_set_ptr->parent_pcs_ptr->temporal_layer_index > 0 ? EB_FALSE : enable_wm;
     frm_hdr->allow_warped_motion = enable_wm
         && !(frm_hdr->frame_type == KEY_FRAME || frm_hdr->frame_type == INTRA_ONLY_FRAME)
         && !frm_hdr->error_resilient_mode;
-    frm_hdr->is_motion_mode_switchable = frm_hdr->allow_warped_motion;
+    frm_hdr->allow_obmc = enable_obmc;
+    frm_hdr->is_motion_mode_switchable = frm_hdr->allow_warped_motion || frm_hdr->allow_obmc;
 
     return;
 }

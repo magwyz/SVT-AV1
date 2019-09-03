@@ -585,6 +585,7 @@ typedef struct FrameHeader {
     /*!< 1: Indicates that the syntax element motion_mode may be present
      *   0: Indicates that the syntax element motion_mode will not be present*/
     uint8_t                 allow_warped_motion;
+    uint8_t                 allow_obmc;
 
     /*!< 1, specifies that the frame is restricted to a reduced subset of the
      * full set of transform types */

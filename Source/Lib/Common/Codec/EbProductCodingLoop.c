@@ -1047,7 +1047,6 @@ void init_nsq_block(
     uint32_t blk_idx = 0;
     do {
         const BlockGeom * blk_geom = get_blk_geom_mds(blk_idx);
-        context_ptr->md_local_cu_unit[blk_idx].avail_blk_flag = EB_FALSE;
         if (blk_geom->shape == PART_N)
         {
             context_ptr->md_cu_arr_nsq[blk_idx].split_flag = EB_TRUE;
@@ -5539,6 +5538,10 @@ EB_EXTERN EbErrorType mode_decision_sb(
     uint32_t                               leaf_count = mdcResultTbPtr->leaf_count;
     const EbMdcLeafData *const           leaf_data_array = mdcResultTbPtr->leaf_data_array;
     context_ptr->sb_ptr = sb_ptr;
+
+    for (unsigned i = 0; i < BLOCK_MAX_COUNT_SB_128; ++i)
+        context_ptr->md_local_cu_unit[i].avail_blk_flag = EB_FALSE;
+
     if (picture_control_set_ptr->parent_pcs_ptr->pic_depth_mode <= PIC_SQ_DEPTH_MODE) {
         init_nsq_block(
             sequence_control_set_ptr,
@@ -5548,6 +5551,7 @@ EB_EXTERN EbErrorType mode_decision_sb(
         init_sq_non4_block(
             context_ptr);
     }
+
     // Mode Decision Neighbor Arrays
     context_ptr->intra_luma_mode_neighbor_array = picture_control_set_ptr->md_intra_luma_mode_neighbor_array[MD_NEIGHBOR_ARRAY_INDEX];
     context_ptr->intra_chroma_mode_neighbor_array = picture_control_set_ptr->md_intra_chroma_mode_neighbor_array[MD_NEIGHBOR_ARRAY_INDEX];

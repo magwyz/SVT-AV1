@@ -3530,7 +3530,9 @@ static void build_intra_predictors(
     const uint8_t *above_ref = topNeighArray;//CHKN ref - ref_stride;
     const uint8_t *left_ref = leftNeighArray;//CHKN ref - 1;
     DECLARE_ALIGNED(32, uint8_t, left_data[MAX_TX_SIZE * 2 + 48]);
+    EB_MEMSET(left_data, 127, sizeof(left_data));
     DECLARE_ALIGNED(32, uint8_t, above_data[MAX_TX_SIZE * 2 + 48]);
+    EB_MEMSET(above_data, 127, sizeof(above_data));
     uint8_t *const above_row = above_data + 32;
     uint8_t *const left_col = left_data + 32;
 

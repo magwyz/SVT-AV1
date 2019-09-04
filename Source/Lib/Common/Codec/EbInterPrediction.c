@@ -2782,6 +2782,11 @@ EbErrorType obmc_motion_prediction(
 {
   MacroBlockD *xd = md_context_ptr->cu_ptr->av1xd;
 
+  for (unsigned i = 0; i < MAX_MB_PLANE; ++i) {
+    xd->plane[i].subsampling_x = i == 0 ? 0 : 1;
+    xd->plane[i].subsampling_y = i == 0 ? 0 : 1;
+  }
+
   const int num_planes = 3; //av1_num_planes(cm)
   uint8_t *dst_buf1[MAX_MB_PLANE], *dst_buf2[MAX_MB_PLANE];
   int dst_stride1[MAX_MB_PLANE] = { MAX_SB_SIZE, MAX_SB_SIZE, MAX_SB_SIZE };

@@ -1567,8 +1567,8 @@ MotionMode motion_mode_allowed(
         if (!has_overlappable_candidates(cu_ptr)) // check_num_overlappable_neighbors
             return SIMPLE_TRANSLATION;
 
-        if (cu_ptr->prediction_unit_array[0].num_proj_ref >= 1 &&
-           (frm_hdr->allow_warped_motion)) // TODO(JS): when scale is added, put: && !av1_is_scaled(&(xd->block_refs[0]->sf))
+        if (frm_hdr->allow_warped_motion &&
+            cu_ptr->prediction_unit_array[0].num_proj_ref >= 1) // TODO(JS): when scale is added, put: && !av1_is_scaled(&(xd->block_refs[0]->sf))
         {
             if (frm_hdr->force_integer_mv)
                 return OBMC_CAUSAL;

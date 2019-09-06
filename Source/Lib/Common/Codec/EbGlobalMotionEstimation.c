@@ -14,24 +14,39 @@ void global_motion_estimation(PictureParentControlSet *picture_control_set_ptr,
                               MeContext *context_ptr,
                               EbPictureBufferDesc *input_picture_ptr)
 {
-    uint8_t num_of_ref_pic_to_search = AOMMIN(picture_control_set_ptr->ref_list0_count, 1);
+    uint32_t numOfListToSearch = (picture_control_set_ptr->slice_type == P_SLICE)
+        ? (uint32_t)REF_LIST_0 : (uint32_t)REF_LIST_1;
 
-    // Ref Picture Loop
-    for (uint32_t ref_pic_index = 0; ref_pic_index < num_of_ref_pic_to_search;
-         ++ref_pic_index)
-    {
-        EbPaReferenceObject *referenceObject;
+    for (uint32_t listIndex = REF_LIST_0; listIndex <= numOfListToSearch; ++listIndex) {
 
+        uint32_t num_of_ref_pic_to_search;
         if (context_ptr->me_alt_ref == EB_TRUE)
-            referenceObject = (EbPaReferenceObject *)context_ptr->alt_ref_reference_ptr;
+            num_of_ref_pic_to_search = 1;
         else
-            referenceObject = (EbPaReferenceObject *)picture_control_set_ptr
-                    ->ref_pa_pic_ptr_array[REF_LIST_0][ref_pic_index]->object_ptr;
+            num_of_ref_pic_to_search = picture_control_set_ptr->slice_type == P_SLICE
+                ? picture_control_set_ptr->ref_list0_count
+                : listIndex == REF_LIST_0
+                    ? picture_control_set_ptr->ref_list0_count
+                    : picture_control_set_ptr->ref_list1_count;
+
+        // Ref Picture Loop
+        for (uint32_t ref_pic_index = 0; ref_pic_index < num_of_ref_pic_to_search;
+             ++ref_pic_index)
+        {
+            EbPaReferenceObject *referenceObject;
+
+            if (context_ptr->me_alt_ref == EB_TRUE)
+                referenceObject = (EbPaReferenceObject *)context_ptr->alt_ref_reference_ptr;
+            else
+                referenceObject = (EbPaReferenceObject *)picture_control_set_ptr
+                        ->ref_pa_pic_ptr_array[listIndex][ref_pic_index]->object_ptr;
 
 
-        EbPictureBufferDesc *ref_picture_ptr = (EbPictureBufferDesc*)referenceObject->input_padded_picture_ptr;
+            EbPictureBufferDesc *ref_picture_ptr = (EbPictureBufferDesc*)referenceObject->input_padded_picture_ptr;
 
-        compute_global_motion(input_picture_ptr, ref_picture_ptr, &picture_control_set_ptr->global_motion_estimation);
+            compute_global_motion(input_picture_ptr, ref_picture_ptr,
+                &picture_control_set_ptr->global_motion_estimation[listIndex][ref_pic_index]);
+        }
     }
 }
 

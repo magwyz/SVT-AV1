@@ -358,41 +358,62 @@ void DetectGlobalMotion(
     unsigned checkedLcusCount = 0;
     unsigned globalMotionLcus = 0;
 
-    picture_control_set_ptr->is_global_motion = EB_FALSE;
+    uint32_t numOfListToSearch = (picture_control_set_ptr->slice_type == P_SLICE)
+        ? (uint32_t)REF_LIST_0 : (uint32_t)REF_LIST_1;
 
-    for (sb_count = 0; sb_count < picture_control_set_ptr->sb_total_count; ++sb_count) {
-        sb_origin_x = (sb_count % picture_width_in_sb) * BLOCK_SIZE_64;
-        sb_origin_y = (sb_count / picture_width_in_sb) * BLOCK_SIZE_64;
-        if (((sb_origin_x + BLOCK_SIZE_64) <= picture_control_set_ptr->enhanced_picture_ptr->width) &&
-            ((sb_origin_y + BLOCK_SIZE_64) <= picture_control_set_ptr->enhanced_picture_ptr->height)) {
-            // Current MV
-            GetMv(picture_control_set_ptr, sb_count, &xCurrentMv, &yCurrentMv);
-            xCurrentMv *= 2;
-            yCurrentMv *= 2;
+    for (uint32_t listIndex = REF_LIST_0; listIndex <= numOfListToSearch; ++listIndex) {
 
-            // MV from global motion
-            IntMv gm = gm_get_motion_vector_enc(
-                &picture_control_set_ptr->global_motion_estimation,
-                0 /* allow_hp */,
-                BLOCK_64X64,
-                sb_origin_x / MI_SIZE, sb_origin_y / MI_SIZE,
-                0 /* is_integer */);
+        uint32_t num_of_ref_pic_to_search;
+        if (picture_control_set_ptr->is_alt_ref == EB_TRUE)
+            num_of_ref_pic_to_search = 1;
+        else
+            num_of_ref_pic_to_search = picture_control_set_ptr->slice_type == P_SLICE
+                ? picture_control_set_ptr->ref_list0_count
+                : listIndex == REF_LIST_0
+                    ? picture_control_set_ptr->ref_list0_count
+                    : picture_control_set_ptr->ref_list1_count;
 
-            checkedLcusCount++;
+        // Ref Picture Loop
+        for (uint32_t ref_pic_index = 0; ref_pic_index < num_of_ref_pic_to_search;
+             ++ref_pic_index)
+        {
+            picture_control_set_ptr->is_global_motion[listIndex][ref_pic_index] = EB_FALSE;
 
-            // Check if global motion match current vector
-            float angle = getAngleBetweenMvs(gm, xCurrentMv, yCurrentMv);
+            for (sb_count = 0; sb_count < picture_control_set_ptr->sb_total_count; ++sb_count) {
+                sb_origin_x = (sb_count % picture_width_in_sb) * BLOCK_SIZE_64;
+                sb_origin_y = (sb_count / picture_width_in_sb) * BLOCK_SIZE_64;
+                if (((sb_origin_x + BLOCK_SIZE_64) <= picture_control_set_ptr->enhanced_picture_ptr->width) &&
+                    ((sb_origin_y + BLOCK_SIZE_64) <= picture_control_set_ptr->enhanced_picture_ptr->height)) {
+                    // Current MV
+                    GetMv(picture_control_set_ptr, sb_count, &xCurrentMv, &yCurrentMv);
+                    xCurrentMv *= 2;
+                    yCurrentMv *= 2;
 
-            if (angle < 45)
-                globalMotionLcus++;
+                    // MV from global motion
+                    IntMv gm = gm_get_motion_vector_enc(
+                        &picture_control_set_ptr->global_motion_estimation[listIndex][ref_pic_index],
+                        0 /* allow_hp */,
+                        BLOCK_64X64,
+                        sb_origin_x / MI_SIZE, sb_origin_y / MI_SIZE,
+                        0 /* is_integer */);
+
+                    checkedLcusCount++;
+
+                    // Check if global motion match current vector
+                    float angle = getAngleBetweenMvs(gm, xCurrentMv, yCurrentMv);
+
+                    if (angle < 45)
+                        globalMotionLcus++;
+                }
+            }
+
+            float percentage = globalMotionLcus * 100 / checkedLcusCount;
+
+            if (checkedLcusCount > 0 && percentage > 75
+                && picture_control_set_ptr->global_motion_estimation[listIndex][ref_pic_index].wmtype > TRANSLATION)
+                picture_control_set_ptr->is_global_motion[listIndex][ref_pic_index] = EB_TRUE;
         }
     }
-
-    float percentage = globalMotionLcus * 100 / checkedLcusCount;
-
-    if (checkedLcusCount > 0 && percentage > 75
-        && picture_control_set_ptr->global_motion_estimation.wmtype > TRANSLATION)
-        picture_control_set_ptr->is_global_motion = EB_TRUE;
 }
 
 /************************************************

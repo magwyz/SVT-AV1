@@ -216,14 +216,19 @@ void CheckForNonUniformMotionVectorField(
 }
 
 
-float getAngleBetweenMvs(IntMv gm, int32_t xCurrentMv, int32_t yCurrentMv)
+bool checkAngleBetweenMvs(IntMv gm, int32_t xCurrentMv, int32_t yCurrentMv)
 {
-    float scalar_product = xCurrentMv * gm.as_mv.col + yCurrentMv * gm.as_mv.row;
     float normCurrentMv = sqrt(xCurrentMv * xCurrentMv + yCurrentMv * yCurrentMv);
     float normGlobalMv = sqrt(gm.as_mv.col * gm.as_mv.col + gm.as_mv.row * gm.as_mv.row);
-    float cosine = normCurrentMv > 0 && normGlobalMv > 0 ?
-                scalar_product / (normCurrentMv * normGlobalMv) : 1.f;
-    return cosine >= 1.f ? 0.f : acos(cosine) * 180 / M_PI;
+
+    if (normCurrentMv < 0.1f || normGlobalMv < 0.1f)
+        return true;
+
+    float scalar_product = xCurrentMv * gm.as_mv.col + yCurrentMv * gm.as_mv.row;
+    float cosine = scalar_product / (normCurrentMv * normGlobalMv);
+    float angle = cosine >= 1.f ? 0.f : acos(cosine) * 180 / M_PI;
+
+    return angle < 45 ? true : false;
 }
 
 
@@ -400,16 +405,14 @@ void DetectGlobalMotion(
                     checkedLcusCount++;
 
                     // Check if global motion match current vector
-                    float angle = getAngleBetweenMvs(gm, xCurrentMv, yCurrentMv);
-
-                    if (angle < 45)
+                    if (checkAngleBetweenMvs(gm, xCurrentMv, yCurrentMv))
                         globalMotionLcus++;
                 }
             }
 
             float percentage = globalMotionLcus * 100 / checkedLcusCount;
 
-            if (checkedLcusCount > 0 && percentage > 75
+            if (checkedLcusCount > 0 && percentage > 85
                 && picture_control_set_ptr->global_motion_estimation[listIndex][ref_pic_index].wmtype > TRANSLATION)
                 picture_control_set_ptr->is_global_motion[listIndex][ref_pic_index] = EB_TRUE;
         }

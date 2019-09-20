@@ -3360,6 +3360,21 @@ void  inject_inter_candidates(
               && context_ptr->blk_geom->bheight >= 8)
              || params_l0->wmtype <= TRANSLATION)
             && (context_ptr->injected_mv_count_l0 == 0 || mrp_is_already_injected_mv_l0(context_ptr, to_inject_mv_x_l0, to_inject_mv_x_l0, to_inject_ref_type) == EB_FALSE)) {
+
+#if II_COMP_FLAG      // GLOBALMV L0
+             MvReferenceFrame rf[2];
+             rf[0] = to_inject_ref_type;
+             rf[1] = -1;
+
+            uint8_t inter_type;
+            uint8_t is_ii_allowed = svt_is_interintra_allowed(picture_control_set_ptr->parent_pcs_ptr->enable_inter_intra, bsize, GLOBALMV, rf);
+            uint8_t tot_inter_types = is_ii_allowed ? II_COUNT : 1;
+            //uint8_t is_obmc_allowed =  obmc_motion_mode_allowed(picture_control_set_ptr, context_ptr->cu_ptr, bsize, rf[0], rf[1], NEWMV) == OBMC_CAUSAL;
+            //tot_inter_types = is_obmc_allowed ? tot_inter_types+1 : tot_inter_types;
+
+            for (inter_type = 0; inter_type < tot_inter_types; inter_type++)
+            {
+#endif
             candidateArray[canTotalCnt].type = INTER_MODE;
 
             candidateArray[canTotalCnt].distortion_ready = 0;
@@ -3392,7 +3407,39 @@ void  inject_inter_candidates(
             candidateArray[canTotalCnt].transform_type[0] = DCT_DCT;
             candidateArray[canTotalCnt].transform_type_uv = DCT_DCT;
 
+#if II_COMP_FLAG
+            if (inter_type == 0) {
+                candidateArray[canTotalCnt].is_interintra_used = 0;
+            }
+            else {
+                if (is_ii_allowed) {
+                    if (inter_type == 1) {
+                        inter_intra_search(
+                            picture_control_set_ptr,
+                            context_ptr,
+                            &candidateArray[canTotalCnt]);
+                        candidateArray[canTotalCnt].is_interintra_used = 1;
+                        candidateArray[canTotalCnt].use_wedge_interintra = 1;
+                        candidateArray[canTotalCnt].ii_wedge_sign = 0;
+                    }
+                    else if (inter_type == 2) {
+                        candidateArray[canTotalCnt].is_interintra_used = 1;
+                        candidateArray[canTotalCnt].interintra_mode = candidateArray[canTotalCnt - 1].interintra_mode;
+                        candidateArray[canTotalCnt].use_wedge_interintra = 0;
+                    }
+                }
+                //if (is_obmc_allowed && inter_type == tot_inter_types - 1) {
+                //    candidateArray[canTotalCnt].is_interintra_used = 0;
+                //    candidateArray[canTotalCnt].motion_mode = OBMC_CAUSAL;
+                //}
+            }
+#endif
+
             INCRMENT_CAND_TOTAL_COUNT(canTotalCnt);
+
+#if II_COMP_FLAG
+            }
+#endif
 
             context_ptr->injected_mv_x_l0_array[context_ptr->injected_mv_count_l0] = to_inject_mv_x_l0;
             context_ptr->injected_mv_y_l0_array[context_ptr->injected_mv_count_l0] = to_inject_mv_y_l0;
@@ -3421,7 +3468,6 @@ void  inject_inter_candidates(
                 rf[1] = svt_get_ref_frame_type(REF_LIST_1, 0/*list1_ref_index*/);
                 uint8_t to_inject_ref_type = av1_ref_frame_type(rf);
                 if (context_ptr->injected_mv_count_bipred == 0 || mrp_is_already_injected_mv_bipred(context_ptr, to_inject_mv_x_l0, to_inject_mv_y_l0, to_inject_mv_x_l1, to_inject_mv_y_l1, to_inject_ref_type) == EB_FALSE) {
-    #if COMP_MODE
                     context_ptr->variance_ready = 0;
                     for (cur_type = MD_COMP_AVG; cur_type <= tot_comp_types; cur_type++)
                     {
@@ -3430,7 +3476,6 @@ void  inject_inter_candidates(
                         if (context_ptr->variance_ready)
                             if (context_ptr->prediction_mse < 8 || (!have_newmv_in_inter_mode(GLOBAL_GLOBALMV) && context_ptr->prediction_mse < 64))
                                 continue;
-    #endif
                     candidateArray[canTotalCnt].type = INTER_MODE;
                     candidateArray[canTotalCnt].distortion_ready = 0;
                     candidateArray[canTotalCnt].use_intrabc = 0;
@@ -3443,6 +3488,11 @@ void  inject_inter_candidates(
                     candidateArray[canTotalCnt].pred_mode = GLOBAL_GLOBALMV;
                     candidateArray[canTotalCnt].motion_mode = SIMPLE_TRANSLATION;
                     candidateArray[canTotalCnt].is_compound = 1;
+
+#if II_COMP_FLAG
+                    candidateArray[canTotalCnt].is_interintra_used = 0;
+#endif
+
                     candidateArray[canTotalCnt].is_new_mv = 0;
                     candidateArray[canTotalCnt].is_zero_mv = 0;
                     candidateArray[canTotalCnt].drl_index = 0;
@@ -3461,14 +3511,12 @@ void  inject_inter_candidates(
                     candidateArray[canTotalCnt].motion_vector_yl0 = to_inject_mv_y_l0;
                     candidateArray[canTotalCnt].motion_vector_xl1 = to_inject_mv_x_l1;
                     candidateArray[canTotalCnt].motion_vector_yl1 = to_inject_mv_y_l1;
-    #if COMP_MODE
                     //GLOB-GLOB
                     determine_compound_mode(
                         picture_control_set_ptr,
                         context_ptr,
                         &candidateArray[canTotalCnt],
                         cur_type);
-    #endif
                     INCRMENT_CAND_TOTAL_COUNT(canTotalCnt);
 
                     context_ptr->injected_mv_x_bipred_l0_array[context_ptr->injected_mv_count_bipred] = to_inject_mv_x_l0;
@@ -3477,9 +3525,7 @@ void  inject_inter_candidates(
                     context_ptr->injected_mv_y_bipred_l1_array[context_ptr->injected_mv_count_bipred] = to_inject_mv_y_l1;
                     context_ptr->injected_ref_type_bipred_array[context_ptr->injected_mv_count_bipred] = to_inject_ref_type;
                     ++context_ptr->injected_mv_count_bipred;
-    #if COMP_MODE
                     }
-    #endif
                 }
             }
         }

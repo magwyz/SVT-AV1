@@ -1,6 +1,7 @@
 
 #include "EbGlobalMotionEstimationCost.h"
 #include "EbEntropyCoding.h"
+#include "global_motion.h"
 
 
 int aom_count_signed_primitive_refsubexpfin(uint16_t n, uint16_t k, int16_t ref,
@@ -39,7 +40,7 @@ int gm_get_params_cost(const EbWarpedMotionParams *gm,
                 (1 << GM_ALPHA_PREC_BITS),
             (gm->wmmat[5] >> GM_ALPHA_PREC_DIFF) - (1 << GM_ALPHA_PREC_BITS));
       }
-      //AOM_FALLTHROUGH_INTENDED;
+      AOM_FALLTHROUGH_INTENDED;
     case TRANSLATION:
       trans_bits = (gm->wmtype == TRANSLATION)
                        ? GM_ABS_TRANS_ONLY_BITS - !allow_hp
@@ -55,7 +56,7 @@ int gm_get_params_cost(const EbWarpedMotionParams *gm,
           (1 << trans_bits) + 1, SUBEXPFIN_K,
           (ref_gm->wmmat[1] >> trans_prec_diff),
           (gm->wmmat[1] >> trans_prec_diff));
-      //AOM_FALLTHROUGH_INTENDED;
+      AOM_FALLTHROUGH_INTENDED;
     case IDENTITY: break;
     default: assert(0);
   }

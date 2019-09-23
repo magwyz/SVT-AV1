@@ -245,6 +245,22 @@ static void get_inliers_from_indices(MotionModel *params,
 }
 
 
+uint8_t *av1_downconvert_frame(uint8_t *ref, int bit_depth, int frm_width,
+                               int frm_height, int frm_stride) {
+    int i, j;
+    uint16_t *orig_buf = (uint16_t *)ref;
+    uint8_t *buf_8bit = (uint8_t *)malloc(frm_stride * frm_height);
+    assert(buf_8bit);
+    for (i = 0; i < frm_height; ++i) {
+        for (j = 0; j < frm_width; ++j) {
+            buf_8bit[i * frm_stride + j] =
+                orig_buf[i * frm_stride + j] >> (bit_depth - 8);
+        }
+    }
+    return buf_8bit;
+}
+
+
 static int compute_global_motion_feature_based(
     TransformationType type, unsigned char *frm_buffer, int frm_width,
     int frm_height, int frm_stride, int *frm_corners, int num_frm_corners,
@@ -259,10 +275,9 @@ static int compute_global_motion_feature_based(
   unsigned char *ref_buffer = ref;
   RansacFunc ransac = av1_get_ransac_type(type);
 
-  // TODO: handle downconversion.
-  /*if (ref->bit_depth > 8) {
-    ref_buffer = av1_downconvert_frame(ref, bit_depth);
-  }*/
+  if (bit_depth > 8)
+    ref_buffer = av1_downconvert_frame(ref, bit_depth, frm_width,
+                                       frm_height, frm_stride);
 
   num_ref_corners =
       av1_fast_corner_detect(ref_buffer, frm_width, frm_height,
@@ -290,6 +305,8 @@ static int compute_global_motion_feature_based(
   }
 
   free(correspondences);
+  if (bit_depth > 8)
+    free(ref_buffer);
 
   // Return true if any one of the motions has inliers.
   for (i = 0; i < num_motions; ++i) {

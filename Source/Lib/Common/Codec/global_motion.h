@@ -47,8 +47,6 @@ enum {
   GM_ERRORADV_TR_TYPES,
 } UENUM1BYTE(GM_ERRORADV_TYPE);
 
-unsigned char *av1_downconvert_frame(EbPictureBufferDesc *frm, int bit_depth);
-
 #define MAX_PARAMDIM 9
 
 typedef struct {

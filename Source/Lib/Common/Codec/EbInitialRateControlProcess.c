@@ -17,6 +17,8 @@
 #include "EbUtility.h"
 #include "EbReferenceObject.h"
 
+#define PI 3.141592653589793238462643383279502884
+
 /**************************************
 * Macros
 **************************************/
@@ -226,7 +228,7 @@ bool checkAngleBetweenMvs(IntMv gm, int32_t xCurrentMv, int32_t yCurrentMv)
 
     float scalar_product = xCurrentMv * gm.as_mv.col + yCurrentMv * gm.as_mv.row;
     float cosine = scalar_product / (normCurrentMv * normGlobalMv);
-    float angle = cosine >= 1.f ? 0.f : acos(cosine) * 180 / M_PI;
+    float angle = cosine >= 1.f ? 0.f : acos(cosine) * 180 / PI;
 
     return angle < 45 ? true : false;
 }

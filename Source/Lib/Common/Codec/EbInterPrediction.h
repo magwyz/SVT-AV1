@@ -127,16 +127,21 @@ extern "C" {
         PictureControlSet                   *picture_control_set_ptr);
 
     EbErrorType warped_motion_prediction(
+        PictureControlSet                    *picture_control_set_ptr,
         MvUnit                               *mv_unit,
+        uint8_t                               ref_frame_type,
+        uint8_t                                compound_idx,
         uint16_t                                pu_origin_x,
         uint16_t                                pu_origin_y,
         CodingUnit                           *cu_ptr,
         const BlockGeom                        *blk_geom,
         EbPictureBufferDesc                  *ref_pic_list0,
+        EbPictureBufferDesc                  *ref_pic_list1,
         EbPictureBufferDesc                  *prediction_ptr,
         uint16_t                                dst_origin_x,
         uint16_t                                dst_origin_y,
         EbWarpedMotionParams                   *wm_params,
+        EbWarpedMotionParams                   *wm_params_l1,
         uint8_t                                 bit_depth,
         EbBool                                  perform_chroma,
         EbAsm                                   asm_type);

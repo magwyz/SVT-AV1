@@ -127,6 +127,7 @@ extern "C" {
         uint16_t                               num_proj_ref;
         EbBool                                 local_warp_valid;
         EbWarpedMotionParams                   wm_params;
+        EbWarpedMotionParams                   wm_params_l1;
         uint8_t                                tx_depth;
         INTERINTER_COMPOUND_DATA               interinter_comp;
         uint8_t                                compound_idx;

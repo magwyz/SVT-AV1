@@ -3448,7 +3448,8 @@ void  inject_inter_candidates(
 
             EbWarpedMotionParams *params_l1 = &picture_control_set_ptr->parent_pcs_ptr->global_motion[BWDREF_FRAME];
 
-            if (isCompoundEnabled && allow_bipred && params_l1->wmtype <= TRANSLATION) {
+            if (isCompoundEnabled && allow_bipred
+                && (params_l0->wmtype > TRANSLATION && params_l1->wmtype > TRANSLATION)) {
                 /**************
                 GLOBAL_GLOBALMV
                 ************* */
@@ -3486,7 +3487,9 @@ void  inject_inter_candidates(
 
                     candidateArray[canTotalCnt].inter_mode = GLOBAL_GLOBALMV;
                     candidateArray[canTotalCnt].pred_mode = GLOBAL_GLOBALMV;
-                    candidateArray[canTotalCnt].motion_mode = SIMPLE_TRANSLATION;
+                    candidateArray[canTotalCnt].motion_mode = params_l0->wmtype > TRANSLATION ? WARPED_CAUSAL : SIMPLE_TRANSLATION;
+                    candidateArray[canTotalCnt].wm_params = *params_l0;
+                    candidateArray[canTotalCnt].wm_params_l1 = *params_l1;
                     candidateArray[canTotalCnt].is_compound = 1;
 
 #if II_COMP_FLAG
@@ -4892,6 +4895,7 @@ uint32_t product_full_mode_decision(
 
         pu_ptr->inter_mode = candidate_ptr->inter_mode;
         pu_ptr->is_compound = candidate_ptr->is_compound;
+        pu_ptr->compound_idx = candidate_ptr->compound_idx;
         pu_ptr->pred_mv_weight = candidate_ptr->pred_mv_weight;
         pu_ptr->ref_frame_type = candidate_ptr->ref_frame_type;
         pu_ptr->ref_frame_index_l0 = candidate_ptr->ref_frame_index_l0;
@@ -4931,8 +4935,10 @@ uint32_t product_full_mode_decision(
         pu_ptr->overlappable_neighbors[1] = context_ptr->cu_ptr->prediction_unit_array[0].overlappable_neighbors[1];
         pu_ptr->motion_mode = candidate_ptr->motion_mode;
         pu_ptr->num_proj_ref = candidate_ptr->num_proj_ref;
-        if (pu_ptr->motion_mode == WARPED_CAUSAL)
+        if (pu_ptr->motion_mode == WARPED_CAUSAL) {
             EB_MEMCPY(&pu_ptr->wm_params, &candidate_ptr->wm_params, sizeof(EbWarpedMotionParams));
+            EB_MEMCPY(&pu_ptr->wm_params_l1, &candidate_ptr->wm_params_l1, sizeof(EbWarpedMotionParams));
+        }
     }
 
     TransformUnit *txb_ptr;

@@ -35,6 +35,7 @@ extern "C" {
         // Inter Mode
         PredictionMode               inter_mode;
         EbBool                       is_compound;
+        uint8_t                      compound_idx;
         uint32_t                     pred_mv_weight;
         uint8_t                      ref_frame_type;
         int8_t                       ref_frame_index_l0;
@@ -46,6 +47,7 @@ extern "C" {
         MotionMode                   motion_mode;
         uint16_t                      num_proj_ref;
         EbWarpedMotionParams          wm_params;
+        EbWarpedMotionParams          wm_params_l1;
         uint32_t                      overlappable_neighbors[2];
 
         // Index of the alpha Cb and alpha Cr combination

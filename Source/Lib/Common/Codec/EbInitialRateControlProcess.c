@@ -414,8 +414,9 @@ void DetectGlobalMotion(
 
             float percentage = globalMotionLcus * 100 / checkedLcusCount;
 
-            if (checkedLcusCount > 0 && percentage > 85
-                && picture_control_set_ptr->global_motion_estimation[listIndex][ref_pic_index].wmtype > TRANSLATION)
+            /*if (checkedLcusCount > 0 && percentage > 85
+                && picture_control_set_ptr->global_motion_estimation[listIndex][ref_pic_index].wmtype > TRANSLATION)*/
+            if (picture_control_set_ptr->global_motion_estimation[listIndex][ref_pic_index].wmtype > TRANSLATION)
                 picture_control_set_ptr->is_global_motion[listIndex][ref_pic_index] = EB_TRUE;
         }
     }

@@ -4043,9 +4043,6 @@ EbErrorType warped_motion_prediction(
                 &conv_params);
         }
         else {
-
-            printf("Wmtype: %d %d\n", wm_params->wmtype, wm_params_l1->wmtype);
-
             DECLARE_ALIGNED(32, uint16_t, tmp_dstY[128 * 128]);//move this to context if stack does not hold.
 
             conv_params = get_conv_params_no_round(0, 0, 0, tmp_dstY, 128, is_compound, EB_8BIT);
@@ -4058,14 +4055,6 @@ EbErrorType warped_motion_prediction(
                 0,// order_idx,
                 &conv_params.fwd_offset, &conv_params.bck_offset,
                 &conv_params.use_dist_wtd_comp_avg, is_compound);
-
-            for (unsigned y = 0; y < blk_geom->bheight; ++y)
-            {
-                for (unsigned x = 0; x < blk_geom->bwidth; ++x)
-                    printf("%d ", tmp_dstY[y * 128 + x]);
-                printf("\n");
-            }
-            printf("**\n");
 
             conv_params.do_average = 0;
             eb_av1_warp_plane(
@@ -4086,15 +4075,6 @@ EbErrorType warped_motion_prediction(
                 0, //int subsampling_y,
                 &conv_params);
 
-
-            for (unsigned y = 0; y < blk_geom->bheight; ++y)
-            {
-                for (unsigned x = 0; x < blk_geom->bwidth; ++x)
-                    printf("%d ", tmp_dstY[y * 128 + x]);
-                printf("\n");
-            }
-            printf("------\n");
-
             conv_params.do_average = 1;
             src_ptr = ref_pic_list1->buffer_y + ref_pic_list1->origin_x + ref_pic_list1->origin_y * ref_pic_list1->stride_y;
             eb_av1_warp_plane(
@@ -4114,22 +4094,13 @@ EbErrorType warped_motion_prediction(
                 0, //int subsampling_x,
                 0, //int subsampling_y,
                 &conv_params);
-
-            printf("***\n");
-
-            for (unsigned y = 0; y < blk_geom->bheight; ++y)
-            {
-                for (unsigned x = 0; x < blk_geom->bwidth; ++x)
-                    printf("%d ", dst_ptr[y * dst_stride + x]);
-                printf("\n");
-            }
         }
 
         if (!blk_geom->has_uv)
             return return_error;
 
         if (perform_chroma) {
-         if (blk_geom->bwidth >= 16  && blk_geom->bheight >= 16 ) {
+         if (blk_geom->bwidth >= 8 && blk_geom->bheight >= 8) {
             // Cb
             src_ptr = ref_pic_list0->buffer_cb + ref_pic_list0->origin_x / 2 + (ref_pic_list0->origin_y / 2) * ref_pic_list0->stride_cb;
             src_stride = ref_pic_list0->stride_cb;

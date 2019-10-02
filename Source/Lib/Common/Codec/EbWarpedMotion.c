@@ -768,7 +768,6 @@ void eb_av1_warp_affine_c(const int32_t *mat, const uint8_t *ref, int width,
               tmp32 = tmp32 - (1 << (offset_bits - conv_params->round_1)) -
                       (1 << (offset_bits - conv_params->round_1 - 1));
               *dst8 = clip_pixel(ROUND_POWER_OF_TWO(tmp32, round_bits));
-              printf("ind: %d, tmp32: %d, dst8: %d\n", (i - p_row + k + 4) * p_stride + (j - p_col + l + 4), tmp32, *dst8);
             } else
               *p = sum;
           } else {
@@ -783,7 +782,6 @@ void eb_av1_warp_affine_c(const int32_t *mat, const uint8_t *ref, int width,
       }
     }
   }
-  printf("\n");
 }
 
 static void warp_plane(EbWarpedMotionParams *wm, const uint8_t *const ref,

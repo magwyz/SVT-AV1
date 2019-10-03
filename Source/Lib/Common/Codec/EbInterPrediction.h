@@ -131,6 +131,7 @@ extern "C" {
         MvUnit                               *mv_unit,
         uint8_t                               ref_frame_type,
         uint8_t                                compound_idx,
+        INTERINTER_COMPOUND_DATA             *interinter_comp,
         uint16_t                                pu_origin_x,
         uint16_t                                pu_origin_y,
         CodingUnit                           *cu_ptr,

@@ -3007,6 +3007,7 @@ EB_EXTERN void av1_encode_pass(
                                 &context_ptr->mv_unit,
                                 cu_ptr->prediction_unit_array[0].ref_frame_type,
                                 cu_ptr->prediction_unit_array[0].compound_idx,
+                                &cu_ptr->prediction_unit_array[0].interinter_comp,
                                 context_ptr->cu_origin_x,
                                 context_ptr->cu_origin_y,
                                 cu_ptr,

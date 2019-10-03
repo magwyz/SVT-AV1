@@ -4896,6 +4896,7 @@ uint32_t product_full_mode_decision(
         pu_ptr->inter_mode = candidate_ptr->inter_mode;
         pu_ptr->is_compound = candidate_ptr->is_compound;
         pu_ptr->compound_idx = candidate_ptr->compound_idx;
+        pu_ptr->interinter_comp = candidate_ptr->interinter_comp;
         pu_ptr->pred_mv_weight = candidate_ptr->pred_mv_weight;
         pu_ptr->ref_frame_type = candidate_ptr->ref_frame_type;
         pu_ptr->ref_frame_index_l0 = candidate_ptr->ref_frame_index_l0;

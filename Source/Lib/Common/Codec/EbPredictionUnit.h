@@ -36,6 +36,8 @@ extern "C" {
         PredictionMode               inter_mode;
         EbBool                       is_compound;
         uint8_t                      compound_idx;
+        INTERINTER_COMPOUND_DATA     interinter_comp;
+
         uint32_t                     pred_mv_weight;
         uint8_t                      ref_frame_type;
         int8_t                       ref_frame_index_l0;

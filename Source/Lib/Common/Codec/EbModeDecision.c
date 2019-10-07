@@ -3356,8 +3356,8 @@ void  inject_inter_candidates(
         uint8_t to_inject_ref_type = svt_get_ref_frame_type(REF_LIST_0, 0/*list0_ref_index*/);
 
         if (((params_l0->wmtype > TRANSLATION
-              && context_ptr->blk_geom->bwidth >= 8
-              && context_ptr->blk_geom->bheight >= 8)
+              && context_ptr->blk_geom->bwidth >= 16
+              && context_ptr->blk_geom->bheight >= 16)
              || params_l0->wmtype <= TRANSLATION)
             && (context_ptr->injected_mv_count_l0 == 0 || mrp_is_already_injected_mv_l0(context_ptr, to_inject_mv_x_l0, to_inject_mv_x_l0, to_inject_ref_type) == EB_FALSE)) {
 

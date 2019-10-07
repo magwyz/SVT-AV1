@@ -4204,7 +4204,7 @@ EbErrorType warped_motion_prediction(
             return return_error;
 
         if (perform_chroma) {
-         if (blk_geom->bwidth >= 8 && blk_geom->bheight >= 8) {
+         if (blk_geom->bwidth >= 16 && blk_geom->bheight >= 16) {
             // Cb
             src_ptr = ref_pic_list0->buffer_cb + ref_pic_list0->origin_x / 2 + (ref_pic_list0->origin_y / 2) * ref_pic_list0->stride_cb;
             src_stride = ref_pic_list0->stride_cb;

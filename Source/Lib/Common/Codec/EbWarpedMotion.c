@@ -799,7 +799,7 @@ static void warp_plane(EbWarpedMotionParams *wm, const uint8_t *const ref,
   const int16_t beta = wm->beta;
   const int16_t gamma = wm->gamma;
   const int16_t delta = wm->delta;
-  eb_av1_warp_affine_c(mat, ref, width, height, stride, pred, p_col, p_row, p_width,
+  eb_av1_warp_affine(mat, ref, width, height, stride, pred, p_col, p_row, p_width,
                   p_height, p_stride, subsampling_x, subsampling_y, conv_params,
                   alpha, beta, gamma, delta);
 }
@@ -839,11 +839,8 @@ static int64_t warp_error(EbWarpedMotionParams *wm, const uint8_t *const ref,
       warp_plane(wm, ref, width, height, stride, tmp, j, i, warp_w, warp_h,
                  WARP_ERROR_BLOCK, subsampling_x, subsampling_y, &conv_params);
 
-      // FIXME: use the C version since we seem to have alignment issue with GMC
-      gm_sumerr += eb_av1_calc_frame_error_c(tmp, WARP_ERROR_BLOCK, dst + j + i * p_stride,
-                                             warp_w, warp_h, p_stride);
-      /* gm_sumerr += av1_calc_frame_error_c(tmp, WARP_ERROR_BLOCK, dst + j + i * p_stride,
-                                           warp_w, warp_h, p_stride);*/
+      gm_sumerr += eb_av1_calc_frame_error(tmp, WARP_ERROR_BLOCK, dst + j + i * p_stride,
+                                           warp_w, warp_h, p_stride);
       if (gm_sumerr > best_error) return gm_sumerr;
     }
   }
@@ -857,9 +854,7 @@ int64_t eb_av1_frame_error(int use_hbd, int bd, const uint8_t *ref, int stride,
                               CONVERT_TO_SHORTPTR(dst), p_width, p_height,
                               p_stride, bd);
   }
-  // FIXME: use the C version since we seem to have alignment issue with GMC
-  return eb_av1_calc_frame_error_c(ref, stride, dst, p_width, p_height, p_stride);
-  //return eb_av1_calc_frame_error(ref, stride, dst, p_width, p_height, p_stride);
+  return eb_av1_calc_frame_error(ref, stride, dst, p_width, p_height, p_stride);
 }
 
 int64_t eb_av1_warp_error(EbWarpedMotionParams *wm, int use_hbd, int bd,
@@ -1101,7 +1096,7 @@ static int find_affine_int(int np, const int *pts1, const int *pts2,
     const int dy = pts2[i * 2 + 1] - duy;
     const int sx = pts1[i * 2] - sux;
     const int sy = pts1[i * 2 + 1] - suy;
-    // (TODO)yunqing: This comparison wouldn't be necessary if the sample
+    // (f)yunqing: This comparison wouldn't be necessary if the sample
     // selection is done in find_samples(). Also, global offset can be removed
     // while collecting samples.
     if (abs(sx - dx) < LS_MV_MAX && abs(sy - dy) < LS_MV_MAX) {

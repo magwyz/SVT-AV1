@@ -4446,6 +4446,68 @@ EbErrorType warped_motion_prediction(
                 subpel_y,
                 &conv_params);
 
+            //List1-Cb
+            if (is_compound) {
+                DECLARE_ALIGNED(32, uint16_t, tmp_dstCb_2[64 * 64]);
+
+                src_ptr = ref_pic_list1->buffer_cb + (ref_pic_list1->origin_x + ((pu_origin_x >> 3) << 3)) / 2 + (ref_pic_list1->origin_y + ((pu_origin_y >> 3) << 3)) / 2 * ref_pic_list1->stride_cb;
+                dst_ptr = prediction_ptr->buffer_cb + (prediction_ptr->origin_x + ((dst_origin_x >> 3) << 3)) / 2 + (prediction_ptr->origin_y + ((dst_origin_y >> 3) << 3)) / 2 * prediction_ptr->stride_cb;
+                src_stride = ref_pic_list1->stride_cb;
+                dst_stride = prediction_ptr->stride_cb;
+
+                mv_q4 = clamp_mv_to_umv_border_sb(cu_ptr->av1xd, &mv, blk_geom->bwidth_uv, blk_geom->bheight_uv, 1, 1);
+                subpel_x = mv_q4.col & SUBPEL_MASK;
+                subpel_y = mv_q4.row & SUBPEL_MASK;
+                src_ptr = src_ptr + (mv_q4.row >> SUBPEL_BITS) * src_stride + (mv_q4.col >> SUBPEL_BITS);
+                conv_params = get_conv_params_no_round(0, 1, 0, tmp_dstCb_2, 64, is_compound, EB_8BIT);
+                av1_dist_wtd_comp_weight_assign(
+                    picture_control_set_ptr,
+                    picture_control_set_ptr->parent_pcs_ptr->cur_order_hint,// cur_frame_index,
+                    picture_control_set_ptr->parent_pcs_ptr->ref_order_hint[rf[0] - 1],// bck_frame_index,
+                    picture_control_set_ptr->parent_pcs_ptr->ref_order_hint[rf[1] - 1],// fwd_frame_index,
+                    compound_idx,
+                    0,// order_idx,
+                    &conv_params.fwd_offset, &conv_params.bck_offset,
+                    &conv_params.use_dist_wtd_comp_avg, is_compound);
+                conv_params.use_jnt_comp_avg = conv_params.use_dist_wtd_comp_avg;
+                av1_get_convolve_filter_params(interp_filters, &filter_params_x,
+                    &filter_params_y, blk_geom->bwidth_uv, blk_geom->bheight_uv);
+
+                if (is_masked_compound_type(interinter_comp->type)) {
+                    conv_params.do_average = 0;
+                    av1_make_masked_inter_predictor(
+                        src_ptr,
+                        src_stride,
+                        dst_ptr,
+                        dst_stride,
+                        blk_geom,
+                        blk_geom->bwidth_uv,
+                        blk_geom->bheight_uv,
+                        &filter_params_x,
+                        &filter_params_y,
+                        subpel_x,
+                        subpel_y,
+                        &conv_params,
+                        interinter_comp,
+                        EB_8BIT,
+                        1//plane=cb  seg_mask is computed based on luma and used for chroma
+                    );
+                } else {
+                    convolve[subpel_x != 0][subpel_y != 0][is_compound](
+                        src_ptr,
+                        src_stride,
+                        dst_ptr,
+                        dst_stride,
+                        blk_geom->bwidth_uv,
+                        blk_geom->bheight_uv,
+                        &filter_params_x,//puSize > 8 ? &av1RegularFilter : &av1RegularFilterW4,
+                        &filter_params_y,//puSize > 8 ? &av1RegularFilter : &av1RegularFilterW4,
+                        subpel_x,
+                        subpel_y,
+                        &conv_params);
+                }
+            }
+
             //List0-Cr
             src_ptr = ref_pic_list0->buffer_cr + (ref_pic_list0->origin_x + ((pu_origin_x >> 3) << 3)) / 2 + (ref_pic_list0->origin_y + ((pu_origin_y >> 3) << 3)) / 2 * ref_pic_list0->stride_cr;
             dst_ptr = prediction_ptr->buffer_cr + (prediction_ptr->origin_x + ((dst_origin_x >> 3) << 3)) / 2 + (prediction_ptr->origin_y + ((dst_origin_y >> 3) << 3)) / 2 * prediction_ptr->stride_cr;
@@ -4457,6 +4519,10 @@ EbErrorType warped_motion_prediction(
             subpel_y = mv_q4.row & SUBPEL_MASK;
             src_ptr = src_ptr + (mv_q4.row >> SUBPEL_BITS) * src_stride + (mv_q4.col >> SUBPEL_BITS);
             conv_params = get_conv_params_no_round(0, 0, 0, tmp_dstCr, 64, is_compound, EB_8BIT);
+
+            av1_get_convolve_filter_params(interp_filters, &filter_params_x,
+                &filter_params_y, blk_geom->bwidth_uv, blk_geom->bheight_uv);
+
             convolve[subpel_x != 0][subpel_y != 0][is_compound](
                 src_ptr,
                 src_stride,
@@ -4469,8 +4535,70 @@ EbErrorType warped_motion_prediction(
                 subpel_x,
                 subpel_y,
                 &conv_params);
+
+            //List1-Cr
+            if (is_compound) {
+                DECLARE_ALIGNED(32, uint16_t, tmp_dstCr_2[64 * 64]);
+
+                src_ptr = ref_pic_list1->buffer_cr + (ref_pic_list1->origin_x + ((pu_origin_x >> 3) << 3)) / 2 + (ref_pic_list1->origin_y + ((pu_origin_y >> 3) << 3)) / 2 * ref_pic_list1->stride_cr;
+                dst_ptr = prediction_ptr->buffer_cr + (prediction_ptr->origin_x + ((dst_origin_x >> 3) << 3)) / 2 + (prediction_ptr->origin_y + ((dst_origin_y >> 3) << 3)) / 2 * prediction_ptr->stride_cr;
+                src_stride = ref_pic_list1->stride_cr;
+                dst_stride = prediction_ptr->stride_cr;
+
+                mv_q4 = clamp_mv_to_umv_border_sb(cu_ptr->av1xd, &mv, blk_geom->bwidth_uv, blk_geom->bheight_uv, 1, 1);
+                subpel_x = mv_q4.col & SUBPEL_MASK;
+                subpel_y = mv_q4.row & SUBPEL_MASK;
+                src_ptr = src_ptr + (mv_q4.row >> SUBPEL_BITS) * src_stride + (mv_q4.col >> SUBPEL_BITS);
+                conv_params = get_conv_params_no_round(0, 1, 0, tmp_dstCr_2, 64, is_compound, EB_8BIT);
+                av1_dist_wtd_comp_weight_assign(
+                    picture_control_set_ptr,
+                    picture_control_set_ptr->parent_pcs_ptr->cur_order_hint,// cur_frame_index,
+                    picture_control_set_ptr->parent_pcs_ptr->ref_order_hint[rf[0] - 1],// bck_frame_index,
+                    picture_control_set_ptr->parent_pcs_ptr->ref_order_hint[rf[1] - 1],// fwd_frame_index,
+                    compound_idx,
+                    0,// order_idx,
+                    &conv_params.fwd_offset, &conv_params.bck_offset,
+                    &conv_params.use_dist_wtd_comp_avg, is_compound);
+                conv_params.use_jnt_comp_avg = conv_params.use_dist_wtd_comp_avg;
+                av1_get_convolve_filter_params(interp_filters, &filter_params_x,
+                    &filter_params_y, blk_geom->bwidth_uv, blk_geom->bheight_uv);
+
+                if (is_masked_compound_type(interinter_comp->type)) {
+                    conv_params.do_average = 0;
+                    av1_make_masked_inter_predictor(
+                        src_ptr,
+                        src_stride,
+                        dst_ptr,
+                        dst_stride,
+                        blk_geom,
+                        blk_geom->bwidth_uv,
+                        blk_geom->bheight_uv,
+                        &filter_params_x,
+                        &filter_params_y,
+                        subpel_x,
+                        subpel_y,
+                        &conv_params,
+                        interinter_comp,
+                        EB_8BIT,
+                        2//plane=cr  seg_mask is computed based on luma and used for chroma
+                    );
+                } else {
+                    convolve[subpel_x != 0][subpel_y != 0][is_compound](
+                        src_ptr,
+                        src_stride,
+                        dst_ptr,
+                        dst_stride,
+                        blk_geom->bwidth_uv,
+                        blk_geom->bheight_uv,
+                        &filter_params_x,//puSize > 8 ? &av1RegularFilter : &av1RegularFilterW4,
+                        &filter_params_y,//puSize > 8 ? &av1RegularFilter : &av1RegularFilterW4,
+                        subpel_x,
+                        subpel_y,
+                        &conv_params);
+                }
             }
         }
+    }
     } else { // HBD
         uint16_t *src_ptr;
         uint16_t *dst_ptr;

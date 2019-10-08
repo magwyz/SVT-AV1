@@ -361,20 +361,14 @@ void SetGlobalMotionField(
     if (parent_pcs_ptr->is_global_motion[get_list_idx(BWDREF_FRAME)][get_ref_frame_idx(BWDREF_FRAME)])
         parent_pcs_ptr->global_motion[BWDREF_FRAME]
             = parent_pcs_ptr->global_motion_estimation[get_list_idx(BWDREF_FRAME)][get_ref_frame_idx(BWDREF_FRAME)];
+#if 0
     if (parent_pcs_ptr->is_global_motion[get_list_idx(GOLDEN_FRAME)][get_ref_frame_idx(GOLDEN_FRAME)])
         parent_pcs_ptr->global_motion[GOLDEN_FRAME]
             = parent_pcs_ptr->global_motion_estimation[get_list_idx(GOLDEN_FRAME)][get_ref_frame_idx(GOLDEN_FRAME)];
     if (parent_pcs_ptr->is_global_motion[get_list_idx(ALTREF_FRAME)][get_ref_frame_idx(ALTREF_FRAME)])
         parent_pcs_ptr->global_motion[ALTREF_FRAME]
             = parent_pcs_ptr->global_motion_estimation[get_list_idx(ALTREF_FRAME)][get_ref_frame_idx(ALTREF_FRAME)];
-
-    //convert_to_trans_prec(
-    //    picture_control_set_ptr->parent_pcs_ptr->allow_high_precision_mv,
-    //    picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME].wmmat[0]) *GM_TRANS_ONLY_DECODE_FACTOR;
-
-    //convert_to_trans_prec(
-    //    picture_control_set_ptr->parent_pcs_ptr->allow_high_precision_mv,
-    //    picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME].wmmat[1]) *GM_TRANS_ONLY_DECODE_FACTOR;
+#endif
 }
 
 void eb_av1_set_quantizer(

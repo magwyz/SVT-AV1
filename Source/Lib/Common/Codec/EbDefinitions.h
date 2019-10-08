@@ -125,7 +125,7 @@ enum {
 #define BLOCK_MAX_COUNT_SB_64                     1101  // TODO: reduce alloction for 64x64
 #define MAX_TXB_COUNT                             4 // Maximum number of transform blocks.
 #if II_COMP_FLAG
-#define MAX_NFL                                  80
+#define MAX_NFL                                  95
 #else
 #define MAX_NFL                                   65
 #endif

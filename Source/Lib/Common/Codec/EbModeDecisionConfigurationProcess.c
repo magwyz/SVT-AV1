@@ -353,43 +353,20 @@ void SetGlobalMotionField(
     }
 
     //Update MV
-#if 1
-    {
-        PictureParentControlSet *parent_pcs_ptr = picture_control_set_ptr->parent_pcs_ptr;
+    PictureParentControlSet *parent_pcs_ptr = picture_control_set_ptr->parent_pcs_ptr;
 
-        if (parent_pcs_ptr->is_global_motion[get_list_idx(LAST_FRAME)][get_ref_frame_idx(LAST_FRAME)])
-            parent_pcs_ptr->global_motion[LAST_FRAME]
-                = parent_pcs_ptr->global_motion_estimation[get_list_idx(LAST_FRAME)][get_ref_frame_idx(LAST_FRAME)];
-        if (parent_pcs_ptr->is_global_motion[get_list_idx(BWDREF_FRAME)][get_ref_frame_idx(BWDREF_FRAME)])
-            parent_pcs_ptr->global_motion[BWDREF_FRAME]
-                = parent_pcs_ptr->global_motion_estimation[get_list_idx(BWDREF_FRAME)][get_ref_frame_idx(BWDREF_FRAME)];
-    }
-#else
-    if (picture_control_set_ptr->parent_pcs_ptr->is_pan && picture_control_set_ptr->parent_pcs_ptr->is_tilt) {
-        picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME].wmtype = TRANSLATION;
-        picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME].wmmat[1] = ((picture_control_set_ptr->parent_pcs_ptr->panMvx + picture_control_set_ptr->parent_pcs_ptr->tiltMvx) / 2) << 1 << GM_TRANS_ONLY_PREC_DIFF;
-        picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME].wmmat[0] = ((picture_control_set_ptr->parent_pcs_ptr->panMvy + picture_control_set_ptr->parent_pcs_ptr->tiltMvy) / 2) << 1 << GM_TRANS_ONLY_PREC_DIFF;
-    }
-    else if (picture_control_set_ptr->parent_pcs_ptr->is_pan) {
-        picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME].wmtype = TRANSLATION;
-        picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME].wmmat[1] = picture_control_set_ptr->parent_pcs_ptr->panMvx << 1 << GM_TRANS_ONLY_PREC_DIFF;
-        picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME].wmmat[0] = picture_control_set_ptr->parent_pcs_ptr->panMvy << 1 << GM_TRANS_ONLY_PREC_DIFF;
-    }
-    else if (picture_control_set_ptr->parent_pcs_ptr->is_tilt) {
-        picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME].wmtype = TRANSLATION;
-        picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME].wmmat[1] = picture_control_set_ptr->parent_pcs_ptr->tiltMvx << 1 << GM_TRANS_ONLY_PREC_DIFF;
-        picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME].wmmat[0] = picture_control_set_ptr->parent_pcs_ptr->tiltMvy << 1 << GM_TRANS_ONLY_PREC_DIFF;
-    }
-
-    picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME].wmmat[1] = (int32_t)clamp(picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME].wmmat[1], GM_TRANS_MIN*GM_TRANS_DECODE_FACTOR, GM_TRANS_MAX*GM_TRANS_DECODE_FACTOR);
-    picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME].wmmat[0] = (int32_t)clamp(picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME].wmmat[0], GM_TRANS_MIN*GM_TRANS_DECODE_FACTOR, GM_TRANS_MAX*GM_TRANS_DECODE_FACTOR);
-
-    picture_control_set_ptr->parent_pcs_ptr->global_motion[BWDREF_FRAME].wmtype = TRANSLATION;
-    picture_control_set_ptr->parent_pcs_ptr->global_motion[BWDREF_FRAME].wmmat[1] = 0 - picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME].wmmat[1];
-    picture_control_set_ptr->parent_pcs_ptr->global_motion[BWDREF_FRAME].wmmat[0] = 0 - picture_control_set_ptr->parent_pcs_ptr->global_motion[LAST_FRAME].wmmat[0];
-    picture_control_set_ptr->parent_pcs_ptr->global_motion[BWDREF_FRAME].wmmat[1] = (int32_t)clamp(picture_control_set_ptr->parent_pcs_ptr->global_motion[BWDREF_FRAME].wmmat[1], GM_TRANS_MIN*GM_TRANS_DECODE_FACTOR, GM_TRANS_MAX*GM_TRANS_DECODE_FACTOR);
-    picture_control_set_ptr->parent_pcs_ptr->global_motion[BWDREF_FRAME].wmmat[0] = (int32_t)clamp(picture_control_set_ptr->parent_pcs_ptr->global_motion[BWDREF_FRAME].wmmat[0], GM_TRANS_MIN*GM_TRANS_DECODE_FACTOR, GM_TRANS_MAX*GM_TRANS_DECODE_FACTOR);
-#endif
+    if (parent_pcs_ptr->is_global_motion[get_list_idx(LAST_FRAME)][get_ref_frame_idx(LAST_FRAME)])
+        parent_pcs_ptr->global_motion[LAST_FRAME]
+            = parent_pcs_ptr->global_motion_estimation[get_list_idx(LAST_FRAME)][get_ref_frame_idx(LAST_FRAME)];
+    if (parent_pcs_ptr->is_global_motion[get_list_idx(BWDREF_FRAME)][get_ref_frame_idx(BWDREF_FRAME)])
+        parent_pcs_ptr->global_motion[BWDREF_FRAME]
+            = parent_pcs_ptr->global_motion_estimation[get_list_idx(BWDREF_FRAME)][get_ref_frame_idx(BWDREF_FRAME)];
+    if (parent_pcs_ptr->is_global_motion[get_list_idx(GOLDEN_FRAME)][get_ref_frame_idx(GOLDEN_FRAME)])
+        parent_pcs_ptr->global_motion[GOLDEN_FRAME]
+            = parent_pcs_ptr->global_motion_estimation[get_list_idx(GOLDEN_FRAME)][get_ref_frame_idx(GOLDEN_FRAME)];
+    if (parent_pcs_ptr->is_global_motion[get_list_idx(ALTREF_FRAME)][get_ref_frame_idx(ALTREF_FRAME)])
+        parent_pcs_ptr->global_motion[ALTREF_FRAME]
+            = parent_pcs_ptr->global_motion_estimation[get_list_idx(ALTREF_FRAME)][get_ref_frame_idx(ALTREF_FRAME)];
 
     //convert_to_trans_prec(
     //    picture_control_set_ptr->parent_pcs_ptr->allow_high_precision_mv,

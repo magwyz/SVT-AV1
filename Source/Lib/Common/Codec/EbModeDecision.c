@@ -4690,6 +4690,10 @@ EbErrorType generate_md_stage_0_cand(
             cand_ptr->cand_class = CAND_CLASS_0;
             context_ptr->md_stage_0_count[CAND_CLASS_0]++;
         }
+        else if (cand_ptr->inter_mode == GLOBALMV || cand_ptr->inter_mode == GLOBAL_GLOBALMV) {
+            cand_ptr->cand_class = CAND_CLASS_5;
+            context_ptr->md_stage_0_count[CAND_CLASS_5]++;
+        }
         else if ((cand_ptr->type == INTER_MODE && cand_ptr->is_compound == 0) ||
             (cand_ptr->type == INTER_MODE && cand_ptr->is_compound == 1 && cand_ptr->interinter_comp.type == COMPOUND_AVERAGE)) {
 

@@ -442,6 +442,7 @@ typedef enum CAND_CLASS {
 #if II_COMP_FLAG
     CAND_CLASS_4,
 #endif
+    CAND_CLASS_5,
     CAND_CLASS_TOTAL
 } CAND_CLASS;
 

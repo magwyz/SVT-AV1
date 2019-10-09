@@ -14019,8 +14019,6 @@ extern "C" {
 
         uint8_t                               fade_out_from_black;
         uint8_t                               fade_in_to_black;
-        EbBool                                is_pan;
-        EbBool                                is_tilt;
         uint8_t                              *sb_flat_noise_array;
         EdgeLcuResults                     *edge_results_ptr;                // used by EncDecProcess()
         uint8_t                              *sharp_edge_sb_flag;
@@ -14070,7 +14068,6 @@ extern "C" {
         uint32_t                             *rc_me_distortion;
 
         // Global motion estimation results
-        EbBool                                is_global_motion[MAX_NUM_OF_REF_PIC_LIST][REF_LIST_MAX_DEPTH];
         EbWarpedMotionParams                  global_motion_estimation[MAX_NUM_OF_REF_PIC_LIST][REF_LIST_MAX_DEPTH];
 
         // Motion Estimation Distortion and OIS Historgram
@@ -14190,10 +14187,6 @@ extern "C" {
         // Resolution of delta quant
         // int32_t delta_q_res;
         int32_t                               allow_comp_inter_inter;
-        int16_t                               panMvx;
-        int16_t                               panMvy;
-        int16_t                               tiltMvx;
-        int16_t                               tiltMvy;
         EbWarpedMotionParams                  global_motion[TOTAL_REFS_PER_FRAME];
         PictureControlSet                    *childPcs;
         Macroblock                           *av1x;

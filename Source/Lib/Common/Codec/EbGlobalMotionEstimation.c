@@ -4,6 +4,7 @@
 #include "EbGlobalMotionEstimation.h"
 #include "EbGlobalMotionEstimationCost.h"
 #include "EbReferenceObject.h"
+#include "EbModeDecision.h"
 
 #include "global_motion.h"
 #include "corner_detect.h"
@@ -14,6 +15,11 @@ void global_motion_estimation(PictureParentControlSet *picture_control_set_ptr,
                               MeContext *context_ptr,
                               EbPictureBufferDesc *input_picture_ptr)
 {
+    // Init all global motions
+    for (unsigned frameIndex = INTRA_FRAME; frameIndex <= ALTREF_FRAME; ++frameIndex)
+        picture_control_set_ptr->global_motion_estimation[get_list_idx(frameIndex)][get_ref_frame_idx(frameIndex)].wmtype = IDENTITY;
+
+    // Compute the required global motions
     uint32_t numOfListToSearch = (picture_control_set_ptr->slice_type == P_SLICE)
         ? (uint32_t)REF_LIST_0 : (uint32_t)REF_LIST_1;
 

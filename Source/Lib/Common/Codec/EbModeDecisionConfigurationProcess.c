@@ -355,17 +355,17 @@ void SetGlobalMotionField(
     //Update MV
     PictureParentControlSet *parent_pcs_ptr = picture_control_set_ptr->parent_pcs_ptr;
 
-    if (parent_pcs_ptr->is_global_motion[get_list_idx(LAST_FRAME)][get_ref_frame_idx(LAST_FRAME)])
+    if (parent_pcs_ptr->global_motion_estimation[get_list_idx(LAST_FRAME)][get_ref_frame_idx(LAST_FRAME)].wmtype > IDENTITY)
         parent_pcs_ptr->global_motion[LAST_FRAME]
             = parent_pcs_ptr->global_motion_estimation[get_list_idx(LAST_FRAME)][get_ref_frame_idx(LAST_FRAME)];
-    if (parent_pcs_ptr->is_global_motion[get_list_idx(BWDREF_FRAME)][get_ref_frame_idx(BWDREF_FRAME)])
+    if (parent_pcs_ptr->global_motion_estimation[get_list_idx(BWDREF_FRAME)][get_ref_frame_idx(BWDREF_FRAME)].wmtype > IDENTITY)
         parent_pcs_ptr->global_motion[BWDREF_FRAME]
             = parent_pcs_ptr->global_motion_estimation[get_list_idx(BWDREF_FRAME)][get_ref_frame_idx(BWDREF_FRAME)];
 #if 0
-    if (parent_pcs_ptr->is_global_motion[get_list_idx(GOLDEN_FRAME)][get_ref_frame_idx(GOLDEN_FRAME)])
+    if (parent_pcs_ptr->global_motion_estimation[get_list_idx(GOLDEN_FRAME)][get_ref_frame_idx(GOLDEN_FRAME)].wmtype > IDENTITY)
         parent_pcs_ptr->global_motion[GOLDEN_FRAME]
             = parent_pcs_ptr->global_motion_estimation[get_list_idx(GOLDEN_FRAME)][get_ref_frame_idx(GOLDEN_FRAME)];
-    if (parent_pcs_ptr->is_global_motion[get_list_idx(ALTREF_FRAME)][get_ref_frame_idx(ALTREF_FRAME)])
+    if (parent_pcs_ptr->global_motion_estimation[get_list_idx(ALTREF_FRAME)][get_ref_frame_idx(ALTREF_FRAME)].wmtype > IDENTITY)
         parent_pcs_ptr->global_motion[ALTREF_FRAME]
             = parent_pcs_ptr->global_motion_estimation[get_list_idx(ALTREF_FRAME)][get_ref_frame_idx(ALTREF_FRAME)];
 #endif

@@ -36,12 +36,12 @@
 // TODO(sarahparker) These need to be retuned for speed 0 and 1 to
 // maximize gains from segmented error metric
 static const double erroradv_tr[] = { 0.65, 0.60, 0.65 };
-static const double erroradv_prod_tr[] = { 20000, 18000, 16000 };
+static const double erroradv_prod_tr[] = { 16000, 16000, 16000 };
 
 int av1_is_enough_erroradvantage(double best_erroradvantage, int params_cost,
                                  int erroradv_type) {
   assert(erroradv_type < GM_ERRORADV_TR_TYPES);
-  return best_erroradvantage < erroradv_tr[erroradv_type] &&
+  return best_erroradvantage < 0.4 &&
          best_erroradvantage * params_cost < erroradv_prod_tr[erroradv_type];
 }
 

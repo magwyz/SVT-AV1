@@ -17,7 +17,9 @@ void global_motion_estimation(PictureParentControlSet *picture_control_set_ptr,
     uint32_t numOfListToSearch = (picture_control_set_ptr->slice_type == P_SLICE)
         ? (uint32_t)REF_LIST_0 : (uint32_t)REF_LIST_1;
 
+    printf("***\n");
     for (uint32_t listIndex = REF_LIST_0; listIndex <= numOfListToSearch; ++listIndex) {
+        printf("-> %d\n", listIndex);
 
         uint32_t num_of_ref_pic_to_search;
         if (context_ptr->me_alt_ref == EB_TRUE)
@@ -29,10 +31,14 @@ void global_motion_estimation(PictureParentControlSet *picture_control_set_ptr,
                     ? picture_control_set_ptr->ref_list0_count
                     : picture_control_set_ptr->ref_list1_count;
 
+        // Limit the global motion search to the ref list first elements
+        num_of_ref_pic_to_search = MIN(num_of_ref_pic_to_search, 1);
+
         // Ref Picture Loop
         for (uint32_t ref_pic_index = 0; ref_pic_index < num_of_ref_pic_to_search;
              ++ref_pic_index)
         {
+            printf("      -> %d\n", ref_pic_index);
             EbPaReferenceObject *referenceObject;
 
             if (context_ptr->me_alt_ref == EB_TRUE)
@@ -193,6 +199,10 @@ void compute_global_motion(EbPictureBufferDesc *input_pic, EbPictureBufferDesc *
                         GM_ERRORADV_TR_0 /* TODO: check error advantage */)) {
                 global_motion = default_warp_params;
             }
+            else
+                printf("         %f - %d - %f\n", (double)best_warp_error / ref_frame_error, global_motion.wmtype,
+                       (double)best_warp_error / ref_frame_error * gm_get_params_cost(&global_motion, ref_params, allow_high_precision_mv));
+
             if (global_motion.wmtype != IDENTITY) {
                 break;
             }

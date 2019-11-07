@@ -1246,6 +1246,13 @@ EbErrorType signal_derivation_enc_dec_kernel_oq(
     // Level                Settings
     // 0                    Injection off (Hsan: but not derivation as used by MV ref derivation)
     // 1                    On
+#if GLOBAL_WARPED_MOTION
+    if (picture_control_set_ptr->enc_mode == ENC_M0
+        && sequence_control_set_ptr->encoder_bit_depth == EB_8BIT)
+        context_ptr->global_mv_injection = 1;
+    else
+        context_ptr->global_mv_injection = 0;
+#else
     if (picture_control_set_ptr->parent_pcs_ptr->sc_content_detected)
         if (picture_control_set_ptr->enc_mode <= ENC_M1)
             context_ptr->global_mv_injection = 1;
@@ -1256,6 +1263,7 @@ EbErrorType signal_derivation_enc_dec_kernel_oq(
         context_ptr->global_mv_injection = 1;
     else
         context_ptr->global_mv_injection = 0;
+#endif
 #if FIX_NEAREST_NEW
     if (picture_control_set_ptr->enc_mode <= ENC_M0 && picture_control_set_ptr->parent_pcs_ptr->is_used_as_reference_flag)
 #else

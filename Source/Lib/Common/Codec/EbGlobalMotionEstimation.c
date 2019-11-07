@@ -44,6 +44,9 @@ void global_motion_estimation(PictureParentControlSet *picture_control_set_ptr,
                     ? picture_control_set_ptr->ref_list0_count
                     : picture_control_set_ptr->ref_list1_count;
 
+        // Limit the global motion search to the first frame types of ref lists
+        num_of_ref_pic_to_search = MIN(num_of_ref_pic_to_search, 1);
+
         // Ref Picture Loop
         for (uint32_t ref_pic_index = 0; ref_pic_index < num_of_ref_pic_to_search;
              ++ref_pic_index)

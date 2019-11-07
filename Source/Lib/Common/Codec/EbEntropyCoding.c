@@ -26,6 +26,7 @@
 #include "EbEntropyCodingProcess.h"
 #include "EbSegmentation.h"
 #include "EbCommonUtils.h"
+#include "EbAdaptiveMotionVectorPrediction.h"
 
 #include "aom_dsp_rtcd.h"
 
@@ -1552,16 +1553,6 @@ static INLINE int is_inter_mode(PredictionMode mode)
     return mode >= SINGLE_INTER_MODE_START && mode < SINGLE_INTER_MODE_END;
 }
 
-static INLINE int is_global_mv_block_ent(
-    const PredictionMode          mode,
-    const BlockSize               bsize,
-    TransformationType            type)
-{
-    return (mode == GLOBALMV || mode == GLOBAL_GLOBALMV)
-            && type > TRANSLATION
-            && is_motion_variation_allowed_bsize(bsize);
-}
-
 #if OBMC_FLAG
 MotionMode obmc_motion_mode_allowed(
     const PictureControlSet         *picture_control_set_ptr,
@@ -1583,7 +1574,7 @@ MotionMode obmc_motion_mode_allowed(
     if (frm_hdr->force_integer_mv == 0) {
         const TransformationType gm_type =
             picture_control_set_ptr->parent_pcs_ptr->global_motion[rf0].wmtype;
-        if (is_global_mv_block_ent(mode, bsize, gm_type))
+        if (is_global_mv_block(mode, bsize, gm_type))
             return SIMPLE_TRANSLATION;
     }
 
@@ -1617,7 +1608,7 @@ MotionMode motion_mode_allowed(
     if (frm_hdr->force_integer_mv == 0) {
         const TransformationType gm_type =
             picture_control_set_ptr->parent_pcs_ptr->global_motion[rf0].wmtype;
-        if (is_global_mv_block_ent(mode, bsize, gm_type))
+        if (is_global_mv_block(mode, bsize, gm_type))
             return SIMPLE_TRANSLATION;
     }
 

@@ -6584,11 +6584,8 @@ EbErrorType warped_motion_prediction(
     EbWarpedMotionParams                 *wm_params_l0,
     EbWarpedMotionParams                 *wm_params_l1,
     uint8_t                               bit_depth,
-    EbBool                                perform_chroma,
-    EbAsm                                 asm_type)
+    EbBool                                perform_chroma)
 {
-    (void)asm_type;
-
     EbErrorType  return_error = EB_ErrorNone;
     uint8_t is_compound = (mv_unit->pred_direction == BI_PRED) ? 1 : 0;
     EbBool is16bit = (EbBool)(bit_depth > EB_8BIT);

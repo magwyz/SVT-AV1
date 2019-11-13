@@ -286,8 +286,7 @@ EbErrorType av1_inter_prediction_hbd(
         EbWarpedMotionParams                 *wm_params_l0,
         EbWarpedMotionParams                 *wm_params_l1,
         uint8_t                               bit_depth,
-        EbBool                                perform_chroma,
-        EbAsm                                 asm_type);
+        EbBool                                perform_chroma);
 
     extern aom_highbd_convolve_fn_t convolveHbd[/*subX*/2][/*subY*/2][/*bi*/2];
     extern aom_convolve_fn_t convolve[/*subX*/2][/*subY*/2][/*bi*/2];

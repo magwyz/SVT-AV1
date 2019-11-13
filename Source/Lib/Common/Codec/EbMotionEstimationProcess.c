@@ -243,9 +243,14 @@ EbErrorType signal_derivation_me_kernel_oq(
         FULL_SAD_SEARCH :
         SUB_SAD_SEARCH;
 
-    if (enc_mode == ENC_M0
-        && sequence_control_set_ptr->encoder_bit_depth == EB_8BIT)
-        context_ptr->me_context_ptr->compute_global_motion = EB_TRUE;
+    if (sequence_control_set_ptr->static_config.enable_global_motion == EB_TRUE)
+    {
+        if (enc_mode == ENC_M0
+            && sequence_control_set_ptr->encoder_bit_depth == EB_8BIT)
+            context_ptr->me_context_ptr->compute_global_motion = EB_TRUE;
+        else
+            context_ptr->me_context_ptr->compute_global_motion = EB_FALSE;
+    }
     else
         context_ptr->me_context_ptr->compute_global_motion = EB_FALSE;
 
@@ -350,9 +355,14 @@ EbErrorType signal_derivation_me_kernel_oq(
         FULL_SAD_SEARCH :
         SUB_SAD_SEARCH;
 
-    if (enc_mode == ENC_M0
-        && sequence_control_set_ptr->encoder_bit_depth == EB_8BIT)
-        context_ptr->me_context_ptr->compute_global_motion = EB_TRUE;
+    if (sequence_control_set_ptr->static_config.enable_global_warped_motion == EB_TRUE)
+    {
+        if (enc_mode == ENC_M0
+            && sequence_control_set_ptr->encoder_bit_depth == EB_8BIT)
+            context_ptr->me_context_ptr->compute_global_motion = EB_TRUE;
+        else
+            context_ptr->me_context_ptr->compute_global_motion = EB_FALSE;
+    }
     else
         context_ptr->me_context_ptr->compute_global_motion = EB_FALSE;
 

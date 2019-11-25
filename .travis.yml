@@ -1,5 +1,6 @@
 # Environment variables
 language: c
+python: 3.7
 cache:
   ccache: true
   pip: true
@@ -40,8 +41,8 @@ before_install:
   - if [ "$CC" != "clang" -a "$CC" != "gcc" ]; then sudo ln -s /usr/bin/ccache /usr/lib/ccache/${CC##*/} || true; fi
   - if [ "$CXX" != "clang++" -a "$CXX" != "g++" ]; then sudo ln -s /usr/bin/ccache /usr/lib/ccache/${CXX##*/} || true; fi
 install:
-  - pip install --user cpp-coveralls
-  - export PATH=/Users/travis/Library/Python/2.7/bin:${PATH}
+  - pip3 install --user cpp-coveralls
+  - export PATH=/Users/travis/Library/Python/3.7/bin:${PATH}
   - |
     if [ "$TRAVIS_OS_NAME" != "osx" ]; then
       export CFLAGS="-Werror"

@@ -214,14 +214,7 @@ EbErrorType av1_inter_prediction_hbd(
         BlockSize plane_bsize, uint8_t *comppred,
         int compstride, const uint8_t *interpred,
         int interstride, const uint8_t *intrapred,
-        int intrastride);
-
-    void combine_interintra_highbd(
-        InterIntraMode mode, uint8_t use_wedge_interintra, uint8_t wedge_index,
-        uint8_t wedge_sign, BlockSize bsize, BlockSize plane_bsize,
-        uint8_t *comppred8, int compstride, const uint8_t *interpred8,
-        int interstride, const uint8_t *intrapred8, int intrastride, int bd);
-
+        int intrastride, uint8_t bit_depth);
 #endif //comp_interintra
 
     void av1_setup_scale_factors_for_frame(ScaleFactors *sf, int other_w,

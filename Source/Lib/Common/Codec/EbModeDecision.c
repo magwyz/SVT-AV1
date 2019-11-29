@@ -299,13 +299,7 @@ void precompute_intra_pred_for_inter_intra(
     }
 }
 #endif
- void combine_interintra(INTERINTRA_MODE mode,
-    int8_t use_wedge_interintra, int wedge_index,
-    int wedge_sign, BlockSize bsize,
-    BlockSize plane_bsize, uint8_t *comppred,
-    int compstride, const uint8_t *interpred,
-    int interstride, const uint8_t *intrapred,
-    int intrastride);
+
 void inter_intra_search(
     PictureControlSet            *picture_control_set_ptr,
     ModeDecisionContext          *context_ptr,
@@ -468,21 +462,6 @@ void inter_intra_search(
                     &inra_pred_desc);
 #endif
 
-                //av1_combine_interintra(xd, bsize, 0, tmp_buf, bw, intrapred, bw);
-#if INTERINTRA_HBD
-                if (context_ptr->hbd_mode_decision)
-                    combine_interintra_highbd(
-                        interintra_mode,//mode,
-                        0,//use_wedge_interintra,
-                        0,//candidate_ptr->interintra_wedge_index,
-                        0,//int wedge_sign,
-                        context_ptr->blk_geom->bsize,
-                        context_ptr->blk_geom->bsize,// plane_bsize,
-                         ii_pred_buf, bwidth, /*uint8_t *comppred, int compstride,*/
-                        tmp_buf, bwidth,  /*const uint8_t *interpred, int interstride,*/
-                        context_ptr->intrapred_buf[j], bwidth /*const uint8_t *intrapred,   int intrastride*/,bit_depth);
-                else
-#endif
                 combine_interintra(
                     interintra_mode,//mode,
                     0,//use_wedge_interintra,
@@ -492,7 +471,8 @@ void inter_intra_search(
                     context_ptr->blk_geom->bsize,// plane_bsize,
                     ii_pred_buf, bwidth, /*uint8_t *comppred, int compstride,*/
                     tmp_buf, bwidth,  /*const uint8_t *interpred, int interstride,*/
-                    context_ptr->intrapred_buf[j], bwidth /*const uint8_t *intrapred,   int intrastride*/);
+                    context_ptr->intrapred_buf[j], bwidth, /*const uint8_t *intrapred,   int intrastride*/
+                    bit_depth);
 
                 //model_rd_sb_fn[MODELRD_TYPE_INTERINTRA](
                 //    cpi, bsize, x, xd, 0, 0, mi_row, mi_col, &rate_sum, &dist_sum,

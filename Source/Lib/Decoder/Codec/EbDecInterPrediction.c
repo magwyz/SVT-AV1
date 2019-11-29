@@ -250,7 +250,7 @@ void av1_combine_interintra(PartitionInfo_t *part_info, BlockSize bsize,
     if (bit_depth > EB_8BIT) {
         /*As per spec we r considering interitra_wedge_sign is always "zero"*/
         /*Check buffers, Aom  2nd time inter_pred buffer plane is plane independent */
-        combine_interintra_highbd(mi->interintra_mode_params.interintra_mode,
+        combine_interintra(mi->interintra_mode_params.interintra_mode,
             mi->interintra_mode_params.wedge_interintra,
             mi->interintra_mode_params.interintra_wedge_index, 0/*interintra_wedgesign*/,
             bsize, plane_bsize, inter_pred, inter_stride, inter_pred,
@@ -263,7 +263,7 @@ void av1_combine_interintra(PartitionInfo_t *part_info, BlockSize bsize,
         mi->interintra_mode_params.wedge_interintra,
         mi->interintra_mode_params.interintra_wedge_index, 0/*interintra_wedgesign*/,
         bsize, plane_bsize, inter_pred, inter_stride, inter_pred,
-        inter_stride, intra_pred, intra_stride);
+        inter_stride, intra_pred, intra_stride, bit_depth);
 }
 
 void av1_build_intra_predictors_for_interintra(DecModCtxt *dec_mod_ctxt,

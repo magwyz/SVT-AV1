@@ -1723,38 +1723,6 @@ static INLINE const uint8_t *av1_get_contiguous_soft_mask(int wedge_index,
     return wedge_params_lookup[sb_type].masks[wedge_sign][wedge_index];
 }
 
-#if COMP_INTERINTRA
-void combine_interintra_highbd(
-    InterIntraMode mode, uint8_t use_wedge_interintra, uint8_t wedge_index,
-    uint8_t wedge_sign, BlockSize bsize, BlockSize plane_bsize,
-    uint8_t *comppred8, int compstride, const uint8_t *interpred8,
-    int interstride, const uint8_t *intrapred8, int intrastride, int bd)
-{
-    const int bw = block_size_wide[plane_bsize];
-    const int bh = block_size_high[plane_bsize];
-
-    if (use_wedge_interintra) {
-        if (is_interintra_wedge_used(bsize)) {
-            const uint8_t *mask =
-                av1_get_contiguous_soft_mask(wedge_index, wedge_sign, bsize);
-            const int subh = 2 * mi_size_high[bsize] == bh;
-            const int subw = 2 * mi_size_wide[bsize] == bw;
-            aom_highbd_blend_a64_mask(comppred8, compstride, intrapred8,
-                intrastride, interpred8, interstride, mask,
-                block_size_wide[bsize], bw, bh, subw, subh, bd);
-        }
-        return;
-    }
-
-    uint8_t mask[MAX_SB_SQUARE];
-    build_smooth_interintra_mask(mask, bw, plane_bsize, mode);
-    aom_highbd_blend_a64_mask(comppred8, compstride, intrapred8, intrastride,
-        interpred8, interstride, mask, bw, bw, bh, 0, 0,
-        bd);
-}
-
-#endif //comp_interintra
-
 const uint8_t *av1_get_compound_type_mask(
     const InterInterCompoundData *const comp_data,
     uint8_t *seg_mask, BlockSize sb_type)
@@ -3153,15 +3121,17 @@ void search_compound_avg_dist(
 
 }
 
-#if II_COMP_FLAG
+#if COMP_INTERINTRA
  void combine_interintra(INTERINTRA_MODE mode,
     int8_t use_wedge_interintra, int wedge_index,
     int wedge_sign, BlockSize bsize,
     BlockSize plane_bsize, uint8_t *comppred,
     int compstride, const uint8_t *interpred,
     int interstride, const uint8_t *intrapred,
-    int intrastride)
+    int intrastride, uint8_t bit_depth)
 {
+    uint8_t is16bit = bit_depth > EB_8BIT;
+
     const int bw = block_size_wide[plane_bsize];
     const int bh = block_size_high[plane_bsize];
 
@@ -3171,17 +3141,26 @@ void search_compound_avg_dist(
                 av1_get_contiguous_soft_mask(wedge_index, wedge_sign, bsize);
             const int subw = 2 * mi_size_wide[bsize] == bw;
             const int subh = 2 * mi_size_high[bsize] == bh;
-            aom_blend_a64_mask(comppred, compstride, intrapred, intrastride,
-                interpred, interstride, mask, block_size_wide[bsize],
-                bw, bh, subw, subh);
+            if (is16bit)
+                aom_highbd_blend_a64_mask(comppred, compstride, intrapred, intrastride,
+                    interpred, interstride, mask, block_size_wide[bsize],
+                    bw, bh, subw, subh, bit_depth);
+            else
+                aom_blend_a64_mask(comppred, compstride, intrapred, intrastride,
+                    interpred, interstride, mask, block_size_wide[bsize],
+                    bw, bh, subw, subh);
         }
         return;
     }
     else {
         uint8_t mask[MAX_SB_SQUARE];
         build_smooth_interintra_mask(mask, bw, plane_bsize, mode);
-        aom_blend_a64_mask(comppred, compstride, intrapred, intrastride, interpred,
-            interstride, mask, bw, bw, bh, 0, 0);
+        if (is16bit)
+            aom_highbd_blend_a64_mask(comppred, compstride, intrapred, intrastride,
+                interpred, interstride, mask, bw, bw, bh, 0, 0, bit_depth);
+        else
+            aom_blend_a64_mask(comppred, compstride, intrapred, intrastride,
+                interpred, interstride, mask, bw, bw, bh, 0, 0);
     }
 }
 #endif
@@ -3258,15 +3237,15 @@ struct build_prediction_ctxt {
     int *tmp_stride;
     int mb_to_far_edge;
 
-    PictureControlSet                    *picture_control_set_ptr;
-    MvUnit                                mv_unit;
-    uint16_t                              pu_origin_x;
-    uint16_t                              pu_origin_y;
-    EbPictureBufferDesc                  *ref_pic_list0;
-    EbPictureBufferDesc                   prediction_ptr;
-    uint16_t                              dst_origin_x;
-    uint16_t                              dst_origin_y;
-    EbBool                                perform_chroma;
+    PictureControlSet *picture_control_set_ptr;
+    MvUnit mv_unit;
+    uint16_t pu_origin_x;
+    uint16_t pu_origin_y;
+    EbPictureBufferDesc *ref_pic_list0;
+    EbPictureBufferDesc prediction_ptr;
+    uint16_t dst_origin_x;
+    uint16_t dst_origin_y;
+    EbBool perform_chroma;
 };
 
 // input: log2 of length, 0(4), 1(8), ...
@@ -3424,6 +3403,7 @@ void av1_setup_build_prediction_by_above_pred(
     xd->mb_to_right_edge = ctxt->mb_to_far_edge +
         (xd->n4_w - rel_mi_col - above_mi_width) * MI_SIZE * 8;
 }
+
 void av1_setup_build_prediction_by_left_pred(MacroBlockD *xd, int rel_mi_row,
     uint8_t left_mi_height,
     MbModeInfo *left_mbmi,
@@ -5202,7 +5182,8 @@ EbErrorType av1_inter_prediction(
                 dst_ptr,       // Inter pred buff
                 dst_stride,    // Inter pred stride
                 (plane == 0) ? intra_pred : (plane == 1) ? intra_pred_cb : intra_pred_cr,  // Intra pred buff
-                intra_stride); // Intra pred stride
+                intra_stride,
+                bit_depth); // Intra pred stride
 
         }
     }
@@ -5970,8 +5951,8 @@ EbErrorType av1_inter_prediction_hbd(
                 0                                                   //uint32_t cuOrgY used only for prediction Ptr
             );
 
-            //combine_interintra_highbd
-            combine_interintra_highbd(
+            //combine_interintra
+            combine_interintra(
                 interintra_mode,
                 use_wedge_interintra,
                 interintra_wedge_index,

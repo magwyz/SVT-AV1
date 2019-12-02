@@ -45,12 +45,6 @@ int av1_filter_intra_allowed_bsize(uint8_t enable_filter_intra, BlockSize bs);
 #define INT_MAX       2147483647    // maximum (signed) int value
 #endif
 
-static EB_AV1_INTER_PREDICTION_FUNC_PTR   av1_inter_prediction_function_table[2] =
-{
-    av1_inter_prediction,
-    av1_inter_prediction_hbd
-};
-
 #if II_COMP_FLAG
 void av1_set_ref_frame(MvReferenceFrame *rf,
     int8_t ref_frame_type);
@@ -383,7 +377,7 @@ void inter_intra_search(
     pred_desc.buffer_y = tmp_buf;
 
     //we call the regular inter prediction path here(no compound)
-    av1_inter_prediction_function_table[context_ptr->hbd_mode_decision > EB_8_BIT_MD](
+    av1_inter_prediction(
         picture_control_set_ptr,
         0,//ASSUMPTION: fixed interpolation filter.
         context_ptr->cu_ptr,

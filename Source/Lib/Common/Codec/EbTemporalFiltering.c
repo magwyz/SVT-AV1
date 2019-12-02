@@ -38,11 +38,6 @@
 #undef _MM_HINT_T2
 #define _MM_HINT_T2  1
 
-static EB_AV1_INTER_PREDICTION_FUNC_PTR   av1_inter_prediction_function_table[2] =
-{
-    av1_inter_prediction,
-    av1_inter_prediction_hbd
-};
 
 static unsigned int index_mult[14] = {
         0, 0, 0, 0, 49152, 39322, 32768, 28087, 24576, 21846, 19661, 17874, 0, 15124
@@ -1366,7 +1361,7 @@ static void tf_inter_prediction(PictureParentControlSet *picture_control_set_ptr
                         mv_unit.mv->x = mv_x + i;
                         mv_unit.mv->y = mv_y + j;
 
-                        av1_inter_prediction_function_table[is_highbd](
+                        av1_inter_prediction(
                             NULL,  //picture_control_set_ptr,
                             (uint32_t)interp_filters,
                             &cu_ptr,
@@ -1432,7 +1427,7 @@ static void tf_inter_prediction(PictureParentControlSet *picture_control_set_ptr
                 mv_unit.mv->x = best_mv_x;
                 mv_unit.mv->y = best_mv_y;
 
-                av1_inter_prediction_function_table[is_highbd](
+                av1_inter_prediction(
                     NULL,  //picture_control_set_ptr,
                     (uint32_t)interp_filters,
                     &cu_ptr,

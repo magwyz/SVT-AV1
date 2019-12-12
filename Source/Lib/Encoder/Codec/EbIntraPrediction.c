@@ -3903,7 +3903,6 @@ void eb_av1_predict_intra_block(
     uint32_t bl_org_x_mb,
     uint32_t bl_org_y_mb)
 {
-    (void)use_palette;
     MacroBlockD xd_s;
     MacroBlockD *xd = &xd_s;
 
@@ -4135,7 +4134,6 @@ void eb_av1_predict_intra_block_16bit(
     uint32_t bl_org_x_mb,
     uint32_t bl_org_y_mb)
 {
-    (void)use_palette;
     MacroBlockD xd_s;
     MacroBlockD *xd = &xd_s;
 

@@ -751,7 +751,7 @@ uint64_t av1_intra_fast_cost(
             const int n_cache = eb_get_palette_cache(cu_ptr->av1xd, 0, color_cache);
             palette_mode_cost +=
                 av1_palette_color_cost_y(&candidate_ptr->palette_info.pmi, color_cache,
-                    n_cache, EB_8BIT);
+                    n_cache, picture_control_set_ptr->parent_pcs_ptr->sequence_control_set_ptr->encoder_bit_depth);
             palette_mode_cost +=
                 av1_cost_color_map(&candidate_ptr->palette_info, candidate_ptr->md_rate_estimation_ptr, cu_ptr, 0, blk_geom->bsize, PALETTE_MAP);
             intraLumaModeBitsNum += palette_mode_cost;

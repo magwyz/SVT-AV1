@@ -1150,10 +1150,7 @@ EbErrorType signal_derivation_multi_processes_oq(
     */
     if (frm_hdr->allow_screen_content_tools)
         if (sequence_control_set_ptr->static_config.enable_palette == -1)//auto mode; if not set by cfg
-            picture_control_set_ptr->palette_mode =
-            (sequence_control_set_ptr->static_config.encoder_bit_depth == EB_8BIT ||
-            (sequence_control_set_ptr->static_config.encoder_bit_depth > EB_8BIT && sequence_control_set_ptr->static_config.enable_hbd_mode_decision == 0)) &&
-            picture_control_set_ptr->enc_mode == ENC_M0 ? 6 : 0;
+            picture_control_set_ptr->palette_mode = picture_control_set_ptr->enc_mode == ENC_M0 ? 6 : 0;
         else
             picture_control_set_ptr->palette_mode = sequence_control_set_ptr->static_config.enable_palette;
     else

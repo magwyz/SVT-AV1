@@ -1499,18 +1499,22 @@ void update_av1_mi_map(
                     miPtr[miX + miY * mi_stride].mbmi.tx_depth = cu_ptr->tx_depth;
                 }
                 miPtr[miX + miY * mi_stride].mbmi.block_mi.use_intrabc = cu_ptr->av1xd->use_intrabc;
-
-                miPtr[miX + miY * mi_stride].mbmi.block_mi.ref_frame[0] = rf[0];
 #if II_COMP_FLAG
-                miPtr[miX + miY * mi_stride].mbmi.block_mi.ref_frame[1] = cu_ptr->is_interintra_used ? INTRA_FRAME : rf[1];
+                miPtr[miX + miY * mi_stride].mbmi.block_mi.ref_frame[0] = rf[0];
+                miPtr[miX + miY * mi_stride].mbmi.block_mi.ref_frame[1] =
+                        cu_ptr->prediction_mode_flag == INTER_MODE && cu_ptr->is_interintra_used ?
+                        INTRA_FRAME : rf[1];
 #else
+                miPtr[miX + miY * mi_stride].mbmi.block_mi.ref_frame[0] = rf[0];
                 miPtr[miX + miY * mi_stride].mbmi.block_mi.ref_frame[1] = rf[1];
 #endif
-                if (cu_ptr->prediction_unit_array->inter_pred_direction_index == UNI_PRED_LIST_0) {
+                if (cu_ptr->prediction_mode_flag == INTER_MODE &&
+                    cu_ptr->prediction_unit_array->inter_pred_direction_index == UNI_PRED_LIST_0) {
                     miPtr[miX + miY * mi_stride].mbmi.block_mi.mv[0].as_mv.col = cu_ptr->prediction_unit_array->mv[0].x;
                     miPtr[miX + miY * mi_stride].mbmi.block_mi.mv[0].as_mv.row = cu_ptr->prediction_unit_array->mv[0].y;
                 }
-                else if (cu_ptr->prediction_unit_array->inter_pred_direction_index == UNI_PRED_LIST_1) {
+                else if (cu_ptr->prediction_mode_flag == INTER_MODE &&
+                         cu_ptr->prediction_unit_array->inter_pred_direction_index == UNI_PRED_LIST_1) {
                     miPtr[miX + miY * mi_stride].mbmi.block_mi.mv[0].as_mv.col = cu_ptr->prediction_unit_array->mv[1].x;
                     miPtr[miX + miY * mi_stride].mbmi.block_mi.mv[0].as_mv.row = cu_ptr->prediction_unit_array->mv[1].y;
                 }
@@ -1591,17 +1595,23 @@ void update_mi_map(
                     miPtr[miX + miY * mi_stride].mbmi.tx_depth = cu_ptr->tx_depth;
                 }
                 miPtr[miX + miY * mi_stride].mbmi.block_mi.use_intrabc = cu_ptr->av1xd->use_intrabc;
-                miPtr[miX + miY * mi_stride].mbmi.block_mi.ref_frame[0] = rf[0];
 #if II_COMP_FLAG
-                miPtr[miX + miY * mi_stride].mbmi.block_mi.ref_frame[1] = cu_ptr->is_interintra_used ? INTRA_FRAME : rf[1];
+                miPtr[miX + miY * mi_stride].mbmi.block_mi.ref_frame[0] = rf[0];
+                miPtr[miX + miY * mi_stride].mbmi.block_mi.ref_frame[1] =
+                        cu_ptr->prediction_mode_flag == INTER_MODE && cu_ptr->is_interintra_used ?
+                        INTRA_FRAME : rf[1];
+
 #else
+                miPtr[miX + miY * mi_stride].mbmi.block_mi.ref_frame[0] = rf[0];
                 miPtr[miX + miY * mi_stride].mbmi.block_mi.ref_frame[1] = rf[1];
 #endif
-                if (cu_ptr->prediction_unit_array->inter_pred_direction_index == UNI_PRED_LIST_0) {
+                if (cu_ptr->prediction_mode_flag == INTER_MODE &&
+                    cu_ptr->prediction_unit_array->inter_pred_direction_index == UNI_PRED_LIST_0) {
                     miPtr[miX + miY * mi_stride].mbmi.block_mi.mv[0].as_mv.col = cu_ptr->prediction_unit_array->mv[0].x;
                     miPtr[miX + miY * mi_stride].mbmi.block_mi.mv[0].as_mv.row = cu_ptr->prediction_unit_array->mv[0].y;
                 }
-                else if (cu_ptr->prediction_unit_array->inter_pred_direction_index == UNI_PRED_LIST_1) {
+                else if (cu_ptr->prediction_mode_flag == INTER_MODE &&
+                         cu_ptr->prediction_unit_array->inter_pred_direction_index == UNI_PRED_LIST_1) {
                     miPtr[miX + miY * mi_stride].mbmi.block_mi.mv[0].as_mv.col = cu_ptr->prediction_unit_array->mv[1].x;
                     miPtr[miX + miY * mi_stride].mbmi.block_mi.mv[0].as_mv.row = cu_ptr->prediction_unit_array->mv[1].y;
                 }

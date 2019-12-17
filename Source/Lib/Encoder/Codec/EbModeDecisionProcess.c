@@ -110,14 +110,35 @@ EbErrorType mode_decision_context_ctor(
     EB_MALLOC_ARRAY(context_ptr->md_rate_estimation_ptr, 1);
     context_ptr->is_md_rate_estimation_ptr_owner = EB_TRUE;
 
-    EB_MALLOC_ARRAY(context_ptr->md_local_cu_unit, BLOCK_MAX_COUNT_SB_128);
-    EB_MALLOC_ARRAY(context_ptr->md_cu_arr_nsq, BLOCK_MAX_COUNT_SB_128);
-    EB_MALLOC_ARRAY(context_ptr->md_ep_pipe_sb, BLOCK_MAX_COUNT_SB_128);
+    EB_CALLOC_ARRAY(context_ptr->md_local_cu_unit, BLOCK_MAX_COUNT_SB_128);
+    for (unsigned i = 0; i < BLOCK_MAX_COUNT_SB_128; ++i)
+    {
+        MdCodingUnit *mdcu_ptr = &context_ptr->md_local_cu_unit[i];
+        mdcu_ptr->left_neighbor_partition = INVALID_NEIGHBOR_DATA;
+        mdcu_ptr->above_neighbor_partition = INVALID_NEIGHBOR_DATA;
+    }
+
+    EB_CALLOC_ARRAY(context_ptr->md_cu_arr_nsq, BLOCK_MAX_COUNT_SB_128);
+    for (unsigned i = 0; i < BLOCK_MAX_COUNT_SB_128; ++i)
+    {
+        CodingUnit *cu_ptr = &context_ptr->md_cu_arr_nsq[i];
+        cu_ptr->prediction_mode_flag = 0;
+        cu_ptr->mds_idx = 0;
+        cu_ptr->block_has_coeff = 0;
+        cu_ptr->prediction_unit_array[0].ref_frame_type = 0;
+        cu_ptr->prediction_unit_array[0].num_proj_ref = 0;
+        cu_ptr->transform_unit_array[0].y_has_coeff = 0;
+        cu_ptr->transform_unit_array[0].v_has_coeff = 0;
+        cu_ptr->transform_unit_array[0].u_has_coeff = 0;
+        cu_ptr->prediction_unit_array[0].inter_pred_direction_index = 0;
+    }
+
+    EB_CALLOC_ARRAY(context_ptr->md_ep_pipe_sb, BLOCK_MAX_COUNT_SB_128);
 
     // Fast Candidate Array
-    EB_MALLOC_ARRAY(context_ptr->fast_candidate_array, MODE_DECISION_CANDIDATE_MAX_COUNT);
+    EB_CALLOC_ARRAY(context_ptr->fast_candidate_array, MODE_DECISION_CANDIDATE_MAX_COUNT);
 
-    EB_MALLOC_ARRAY(context_ptr->fast_candidate_ptr_array, MODE_DECISION_CANDIDATE_MAX_COUNT);
+    EB_CALLOC_ARRAY(context_ptr->fast_candidate_ptr_array, MODE_DECISION_CANDIDATE_MAX_COUNT);
 
     for (candidateIndex = 0; candidateIndex < MODE_DECISION_CANDIDATE_MAX_COUNT; ++candidateIndex) {
         context_ptr->fast_candidate_ptr_array[candidateIndex] = &context_ptr->fast_candidate_array[candidateIndex];
@@ -172,15 +193,15 @@ EbErrorType mode_decision_context_ctor(
     context_ptr->md_cu_arr_nsq[0].neigh_top_recon[0] = NULL;
     context_ptr->md_cu_arr_nsq[0].neigh_left_recon_16bit[0] = NULL;
     context_ptr->md_cu_arr_nsq[0].neigh_top_recon_16bit[0] = NULL;
-    EB_MALLOC_ARRAY(context_ptr->md_cu_arr_nsq[0].av1xd, BLOCK_MAX_COUNT_SB_128);
+    EB_CALLOC_ARRAY(context_ptr->md_cu_arr_nsq[0].av1xd, BLOCK_MAX_COUNT_SB_128);
     uint16_t sz = sizeof(uint16_t);
     if (context_ptr->hbd_mode_decision > EB_8_BIT_MD){
-        EB_MALLOC_ARRAY(context_ptr->md_cu_arr_nsq[0].neigh_left_recon_16bit[0], BLOCK_MAX_COUNT_SB_128 * 128 * 3 * sz);
-        EB_MALLOC_ARRAY(context_ptr->md_cu_arr_nsq[0].neigh_top_recon_16bit[0], BLOCK_MAX_COUNT_SB_128 * 128 * 3 * sz);
+        EB_CALLOC_ARRAY(context_ptr->md_cu_arr_nsq[0].neigh_left_recon_16bit[0], BLOCK_MAX_COUNT_SB_128 * 128 * 3 * sz);
+        EB_CALLOC_ARRAY(context_ptr->md_cu_arr_nsq[0].neigh_top_recon_16bit[0], BLOCK_MAX_COUNT_SB_128 * 128 * 3 * sz);
     }
     if (context_ptr->hbd_mode_decision != EB_10_BIT_MD){
-        EB_MALLOC_ARRAY(context_ptr->md_cu_arr_nsq[0].neigh_left_recon[0], BLOCK_MAX_COUNT_SB_128 * 128 * 3);
-        EB_MALLOC_ARRAY(context_ptr->md_cu_arr_nsq[0].neigh_top_recon[0], BLOCK_MAX_COUNT_SB_128 * 128 * 3);
+        EB_CALLOC_ARRAY(context_ptr->md_cu_arr_nsq[0].neigh_left_recon[0], BLOCK_MAX_COUNT_SB_128 * 128 * 3);
+        EB_CALLOC_ARRAY(context_ptr->md_cu_arr_nsq[0].neigh_top_recon[0], BLOCK_MAX_COUNT_SB_128 * 128 * 3);
     }
     uint32_t codedLeafIndex, tu_index;
     for (codedLeafIndex = 0; codedLeafIndex < BLOCK_MAX_COUNT_SB_128; ++codedLeafIndex) {

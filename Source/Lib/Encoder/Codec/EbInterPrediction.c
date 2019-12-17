@@ -1784,7 +1784,7 @@ void build_masked_compound_no_round(
     const uint8_t *mask = av1_get_compound_type_mask(comp_data, seg_mask, sb_type);
 
     if (bit_depth > EB_8BIT) {
-        aom_highbd_blend_a64_d16_mask(dst, dst_stride, src0, src0_stride, src1,
+        aom_highbd_blend_a64_d16_mask_c(dst, dst_stride, src0, src0_stride, src1,
             src1_stride, mask, block_size_wide[sb_type], w,
             h, subw, subh, conv_params, bit_depth);
     }

@@ -985,11 +985,11 @@ void Unipred3x3CandidatesInjection(
         const MeCandidate *me_block_results_ptr = &me_block_results[me_candidate_index];
         const uint8_t inter_direction = me_block_results_ptr->direction;
         const uint8_t list0_ref_index = me_block_results_ptr->ref_idx_l0;
+        if (inter_direction == 0) {
 #if MULTI_PASS_PD
         if (list0_ref_index > context_ptr->md_max_ref_count - 1)
             continue;
 #endif
-        if (inter_direction == 0) {
     for (bipredIndex = 0; bipredIndex < BIPRED_3x3_REFINMENT_POSITIONS; ++bipredIndex)
     {
         /**************
@@ -1129,11 +1129,12 @@ void Unipred3x3CandidatesInjection(
         const MeCandidate *me_block_results_ptr = &me_block_results[me_candidate_index];
         const uint8_t inter_direction = me_block_results_ptr->direction;
         const uint8_t list1_ref_index = me_block_results_ptr->ref_idx_l1;
+        if (inter_direction == 1) {
 #if MULTI_PASS_PD
         if (list1_ref_index > context_ptr->md_max_ref_count - 1)
             continue;
 #endif
-        if (inter_direction == 1) {
+
     for (bipredIndex = 0; bipredIndex < BIPRED_3x3_REFINMENT_POSITIONS; ++bipredIndex)
     {
         if (isCompoundEnabled) {
@@ -3269,12 +3270,11 @@ void inject_new_candidates(
             /**************
                NEW_NEWMV
             ************* */
-            if (allow_bipred) {
+            if (allow_bipred && inter_direction == BI_PRED) {
 #if MULTI_PASS_PD
                 if (list0_ref_index > context_ptr->md_max_ref_count - 1 || list1_ref_index > context_ptr->md_max_ref_count - 1)
                     continue;
 #endif
-                if (inter_direction == 2) {
                     int16_t to_inject_mv_x_l0 = me_results->me_mv_array[me_block_offset][list0_ref_index].x_mv << 1;
                     int16_t to_inject_mv_y_l0 = me_results->me_mv_array[me_block_offset][list0_ref_index].y_mv << 1;
                     int16_t to_inject_mv_x_l1 = me_results->me_mv_array[me_block_offset][((sequence_control_set_ptr->mrp_mode == 0) ? (me_block_results_ptr->ref1_list << 2) : (me_block_results_ptr->ref1_list << 1)) + list1_ref_index].x_mv << 1;
@@ -3380,8 +3380,6 @@ void inject_new_candidates(
                             break;
 #endif
                         }
-                    }
-
                     }
                 }
             }
@@ -5752,6 +5750,7 @@ uint32_t product_full_mode_decision(
         pu_ptr->compound_idx = candidate_ptr->compound_idx;
         pu_ptr->interinter_comp = candidate_ptr->interinter_comp;
         pu_ptr->pred_mv_weight = candidate_ptr->pred_mv_weight;
+
         pu_ptr->ref_frame_type = candidate_ptr->ref_frame_type;
         pu_ptr->ref_frame_index_l0 = candidate_ptr->ref_frame_index_l0;
         pu_ptr->ref_frame_index_l1 = candidate_ptr->ref_frame_index_l1;

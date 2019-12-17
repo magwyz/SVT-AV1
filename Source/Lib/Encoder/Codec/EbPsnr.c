@@ -155,7 +155,7 @@ static int64_t highbd_get_sse(const uint8_t *a, int32_t a_stride, const uint8_t 
         const uint8_t *pa = a;
         const uint8_t *pb = b;
         for (x = 0; x < width / 16; ++x) {
-            eb_aom_highbd_8_mse16x16(pa, a_stride, pb, b_stride, &sse);
+            eb_aom_highbd_8_mse16x16_c(pa, a_stride, pb, b_stride, &sse);
 
             total_sse += sse;
             pa += 16;

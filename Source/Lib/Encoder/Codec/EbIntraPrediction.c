@@ -3049,15 +3049,15 @@ void dr_predictor(uint8_t *dst, ptrdiff_t stride, TxSize tx_size,
     assert(angle > 0 && angle < 270);
 
     if (angle > 0 && angle < 90) {
-        eb_av1_dr_prediction_z1(dst, stride, bw, bh, above, left, upsample_above, dx,
+        eb_av1_dr_prediction_z1_c(dst, stride, bw, bh, above, left, upsample_above, dx,
             dy);
     }
     else if (angle > 90 && angle < 180) {
-        eb_av1_dr_prediction_z2(dst, stride, bw, bh, above, left, upsample_above,
+        eb_av1_dr_prediction_z2_c(dst, stride, bw, bh, above, left, upsample_above,
             upsample_left, dx, dy);
     }
     else if (angle > 180 && angle < 270) {
-        eb_av1_dr_prediction_z3(dst, stride, bw, bh, above, left, upsample_left, dx,
+        eb_av1_dr_prediction_z3_c(dst, stride, bw, bh, above, left, upsample_left, dx,
             dy);
     }
     else if (angle == 90)
@@ -3201,15 +3201,15 @@ void highbd_dr_predictor(uint16_t *dst, ptrdiff_t stride,
     assert(angle > 0 && angle < 270);
 
     if (angle > 0 && angle < 90) {
-        eb_av1_highbd_dr_prediction_z1(dst, stride, bw, bh, above, left,
+        eb_av1_highbd_dr_prediction_z1_c(dst, stride, bw, bh, above, left,
             upsample_above, dx, dy, bd);
     }
     else if (angle > 90 && angle < 180) {
-        eb_av1_highbd_dr_prediction_z2(dst, stride, bw, bh, above, left,
+        eb_av1_highbd_dr_prediction_z2_c(dst, stride, bw, bh, above, left,
             upsample_above, upsample_left, dx, dy, bd);
     }
     else if (angle > 180 && angle < 270) {
-        eb_av1_highbd_dr_prediction_z3(dst, stride, bw, bh, above, left, upsample_left,
+        eb_av1_highbd_dr_prediction_z3_c(dst, stride, bw, bh, above, left, upsample_left,
             dx, dy, bd);
     }
     else if (angle == 90)
@@ -3648,25 +3648,27 @@ static void build_intra_predictors(
                         intra_edge_filter_strength(txwpx, txhpx, p_angle - 90, filt_type);
                     const int32_t n_px = n_top_px + ab_le + (need_right ? txhpx : 0);
                     eb_av1_filter_intra_edge(above_row - ab_le, n_px, strength);
+                    //eb_av1_filter_intra_edge_high_c_old(above_row - ab_le, n_px, strength);
                 }
                 if (need_left && n_left_px > 0) {
                     const int32_t strength = intra_edge_filter_strength(
                         txhpx, txwpx, p_angle - 180, filt_type);
                     const int32_t n_px = n_left_px + ab_le + (need_bottom ? txwpx : 0);
                     eb_av1_filter_intra_edge(left_col - ab_le, n_px, strength);
+                    //eb_av1_filter_intra_edge_high_c_old(left_col - ab_le, n_px, strength);
                 }
             }
             upsample_above =
                 use_intra_edge_upsample(txwpx, txhpx, p_angle - 90, filt_type);
             if (need_above && upsample_above) {
                 const int32_t n_px = txwpx + (need_right ? txhpx : 0);
-                eb_av1_upsample_intra_edge(above_row, n_px);
+                eb_av1_upsample_intra_edge_c(above_row, n_px);
             }
             upsample_left =
                 use_intra_edge_upsample(txhpx, txwpx, p_angle - 180, filt_type);
             if (need_left && upsample_left) {
                 const int32_t n_px = txhpx + (need_bottom ? txwpx : 0);
-                eb_av1_upsample_intra_edge(left_col, n_px);
+                eb_av1_upsample_intra_edge_c(left_col, n_px);
             }
         }
         dr_predictor(dst, dst_stride, tx_size, above_row, left_col, upsample_above,

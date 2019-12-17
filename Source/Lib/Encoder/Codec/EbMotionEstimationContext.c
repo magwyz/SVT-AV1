@@ -125,7 +125,7 @@ EbErrorType me_context_ctor(
 
     EB_MALLOC_ARRAY(object_ptr->one_d_intermediate_results_buf1, BLOCK_SIZE_64*BLOCK_SIZE_64);
 
-    EB_MALLOC_ARRAY(object_ptr->me_candidate, ((mrp_mode == 0) ? ME_RES_CAND_MRP_MODE_0 : ME_RES_CAND_MRP_MODE_1));
+    EB_CALLOC_ARRAY(object_ptr->me_candidate, ((mrp_mode == 0) ? ME_RES_CAND_MRP_MODE_0 : ME_RES_CAND_MRP_MODE_1));
     for (pu_index = 0; pu_index < (uint32_t)(nsq_present ? MAX_ME_PU_COUNT : SQUARE_PU_COUNT); pu_index++) {
         for (meCandidateIndex = 0; meCandidateIndex < (uint32_t)((mrp_mode == 0) ? ME_RES_CAND_MRP_MODE_0 : ME_RES_CAND_MRP_MODE_1); meCandidateIndex++) {
             MotionEstimetionPredUnitCtor(&(object_ptr->me_candidate[meCandidateIndex]).pu[pu_index]);

@@ -330,7 +330,6 @@ void palette_rd_y(PaletteInfo *palette_info, ModeDecisionContext *context_ptr, B
     } else {
         for (int i = 0; i < k; ++i)
             palette_info->pmi.palette_colors[i] = clip_pixel(centroids[i]);
-
     }
     palette_info->pmi.palette_size[0] = k;
 
@@ -352,11 +351,11 @@ void search_palette_luma(PictureControlSet *pcs_ptr, ModeDecisionContext *contex
                          PaletteInfo *palette_cand, uint32_t *tot_palette_cands) {
     int                  colors, n;
     const int            src_stride = src_pic->stride_y;
-     EbBool is16bit = context_ptr->hbd_mode_decision;
+    EbBool is16bit = context_ptr->hbd_mode_decision > 0;
 
-     EbPictureBufferDesc *src_pic = is16bit ?
-            picture_control_set_ptr->input_frame16bit :
-            picture_control_set_ptr->parent_pcs_ptr->enhanced_picture_ptr;
+    EbPictureBufferDesc *src_pic = is16bit ?
+        picture_control_set_ptr->input_frame16bit :
+        picture_control_set_ptr->parent_pcs_ptr->enhanced_picture_ptr;
 
     const uint8_t *const src = src_pic->buffer_y +
           (((context_ptr->cu_origin_x + src_pic->origin_x) +

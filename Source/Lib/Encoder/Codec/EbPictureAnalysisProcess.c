@@ -6100,6 +6100,25 @@ const uint8_t eb_av1_var_offs[MAX_SB_SIZE] = {
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128};
 
+static const uint16_t eb_AV1_HIGH_VAR_OFFS_10[MAX_SB_SIZE] = {
+  128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4,
+  128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4,
+  128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4,
+  128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4,
+  128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4,
+  128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4,
+  128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4,
+  128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4,
+  128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4,
+  128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4,
+  128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4,
+  128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4,
+  128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4,
+  128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4,
+  128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4,
+  128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4, 128 * 4
+};
+
 unsigned int eb_av1_get_sby_perpixel_variance(const AomVarianceFnPtr *fn_ptr, //const AV1_COMP *cpi,
                                               const uint8_t *         src,
                                               int       stride, //const struct Buf2D *ref,
@@ -6110,6 +6129,18 @@ unsigned int eb_av1_get_sby_perpixel_variance(const AomVarianceFnPtr *fn_ptr, //
         fn_ptr->vf(src, stride, eb_av1_var_offs, 0, &sse);
     return ROUND_POWER_OF_TWO(var, num_pels_log2_lookup[bs]);
 }
+
+unsigned int eb_av1_high_get_sby_perpixel_variance(const aom_variance_fn_ptr_t *fn_ptr,
+                                                   const uint16_t *src, int stride,
+                                                   BlockSize bs) {
+  unsigned int sse;
+  const unsigned int var =
+     fn_ptr->vf_hbd_10(CONVERT_TO_BYTEPTR(src), stride,
+                       CONVERT_TO_BYTEPTR(eb_AV1_HIGH_VAR_OFFS_10),
+                       0, &sse);
+  return ROUND_POWER_OF_TWO(var, num_pels_log2_lookup[bs]);
+}
+
 
 // Check if the number of color of a block is superior to 1 and inferior
 // to a given threshold.
@@ -6179,12 +6210,18 @@ static void is_screen_content(PictureParentControlSet *pcs_ptr, int bit_depth) {
     const int blk_h = 16;
     // These threshold values are selected experimentally.
     const int          color_thresh = 4;
+    const int          var_thresh = 0;
     // Counts of blocks with no more than color_thresh colors.
     int counts_1 = 0;
+    // Counts of blocks with no more than color_thresh colors and variance larger
+    // than var_thresh.
+    int counts_2 = 0;
+
+    const aom_variance_fn_ptr_t *fn_ptr = &mefn_ptr[BLOCK_16X16];
 
     EbBool is16bit = bit_depth > EB_8BIT;
     EbPictureBufferDesc *input_picture_ptr =
-        picture_control_set_ptr->enhanced_picture_ptr;
+        pcs_ptr->enhanced_picture_ptr;
 
     for (int r = 0; r + blk_h <= input_picture_ptr->height; r += blk_h)
     {
@@ -6215,7 +6252,13 @@ static void is_screen_content(PictureParentControlSet *pcs_ptr, int bit_depth) {
                 if (is_valid_palette_nb_colors_highbd((uint16_t *)src, blk_w,
                                                       blk_w, blk_h, color_thresh,
                                                       bit_depth))
+                {
                     ++counts_1;
+                    int var = eb_av1_high_get_sby_perpixel_variance(fn_ptr, src, blk_w,
+                                                                    BLOCK_16X16);
+                    if (var > var_thresh)
+                        ++counts_2;
+                }
             }
             else
             {
@@ -6223,14 +6266,22 @@ static void is_screen_content(PictureParentControlSet *pcs_ptr, int bit_depth) {
                     (input_picture_ptr->origin_y + r) * input_picture_ptr->stride_y +
                     input_picture_ptr->origin_x + c;
 
-                if (is_valid_palette_nb_colors(src, blk_w, blk_w, blk_h, color_thresh))
+                if (is_valid_palette_nb_colors(src, input_picture_ptr->stride_y,
+                                               blk_w, blk_h, color_thresh))
+                {
                     ++counts_1;
+                    int var = eb_av1_get_sby_perpixel_variance(fn_ptr, src, input_picture_ptr->stride_y,
+                                                               BLOCK_16X16);
+                    if (var > var_thresh)
+                        ++counts_2;
+                }
             }
         }
     }
 
     pcs_ptr->sc_content_detected =
-        (counts_1 * blk_h * blk_w * 15 > input_picture_ptr->width * input_picture_ptr->height);
+        (counts_1 * blk_h * blk_w * 10 > input_picture_ptr->width * input_picture_ptr->height) &&
+        (counts_2 * blk_h * blk_w * 15 > input_picture_ptr->width * input_picture_ptr->height);
 }
 
 /************************************************

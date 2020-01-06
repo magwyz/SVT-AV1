@@ -6130,7 +6130,7 @@ unsigned int eb_av1_get_sby_perpixel_variance(const AomVarianceFnPtr *fn_ptr, //
     return ROUND_POWER_OF_TWO(var, num_pels_log2_lookup[bs]);
 }
 
-unsigned int eb_av1_high_get_sby_perpixel_variance(const aom_variance_fn_ptr_t *fn_ptr,
+unsigned int eb_av1_high_get_sby_perpixel_variance(const AomVarianceFnPtr *fn_ptr,
                                                    const uint16_t *src, int stride,
                                                    BlockSize bs) {
   unsigned int sse;
@@ -6217,7 +6217,7 @@ static void is_screen_content(PictureParentControlSet *pcs_ptr, int bit_depth) {
     // than var_thresh.
     int counts_2 = 0;
 
-    const aom_variance_fn_ptr_t *fn_ptr = &mefn_ptr[BLOCK_16X16];
+    const AomVarianceFnPtr *fn_ptr = &mefn_ptr[BLOCK_16X16];
 
     EbBool is16bit = bit_depth > EB_8BIT;
     EbPictureBufferDesc *input_picture_ptr =
@@ -6467,7 +6467,7 @@ void *picture_analysis_kernel(void *input_ptr) {
 
             if (scs_ptr->static_config.screen_content_mode == 2) { // auto detect
                 is_screen_content(pcs_ptr,
-                                  pcs_ptr->static_config.encoder_bit_depth);
+                                  scs_ptr->static_config.encoder_bit_depth);
             } else // off / on
                 pcs_ptr->sc_content_detected = scs_ptr->static_config.screen_content_mode;
 

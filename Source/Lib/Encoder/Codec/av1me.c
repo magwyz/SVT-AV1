@@ -36,10 +36,10 @@ int eb_av1_refining_search_sad(IntraBcContext *x, MV *ref_mv, int error_per_bit,
 AomVarianceFnPtr mefn_ptr[BlockSizeS_ALL];
 
 void init_fn_ptr(void) {
-#define BFP0(BT, SDF, VF, SDX4DF)           \
-    mefn_ptr[BT].sdf    = SDF;              \
-    mefn_ptr[BT].vf     = VF;               \
-    mefn_ptr[BT].vf_hbd_10 = VF_HBD_10;     \
+#define BFP0(BT, SDF, VF, VF_HBD_10, SDX4DF)       \
+    mefn_ptr[BT].sdf    = SDF;                     \
+    mefn_ptr[BT].vf     = VF;                      \
+    mefn_ptr[BT].vf_hbd_10 = VF_HBD_10;            \
     mefn_ptr[BT].sdx4df = SDX4DF;
 
     BFP0(BLOCK_4X16, eb_aom_sad4x16, eb_aom_variance4x16, eb_aom_highbd_10_variance4x16, eb_aom_sad4x16x4d)

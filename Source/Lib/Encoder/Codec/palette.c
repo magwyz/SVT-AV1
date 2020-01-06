@@ -349,17 +349,17 @@ int av1_count_colors_highbd(uint16_t *src, int stride, int rows, int cols, int b
  ****************************************/
 void search_palette_luma(PictureControlSet *pcs_ptr, ModeDecisionContext *context_ptr,
                          PaletteInfo *palette_cand, uint32_t *tot_palette_cands) {
-    int                  colors, n;
-    const int            src_stride = src_pic->stride_y;
+    int colors, n;
     EbBool is16bit = context_ptr->hbd_mode_decision > 0;
 
     EbPictureBufferDesc *src_pic = is16bit ?
-        picture_control_set_ptr->input_frame16bit :
-        picture_control_set_ptr->parent_pcs_ptr->enhanced_picture_ptr;
+        pcs_ptr->input_frame16bit :
+        pcs_ptr->parent_pcs_ptr->enhanced_picture_ptr;
+    const int src_stride = src_pic->stride_y;
 
     const uint8_t *const src = src_pic->buffer_y +
-          (((context_ptr->cu_origin_x + src_pic->origin_x) +
-            (context_ptr->cu_origin_y + src_pic->origin_y) *
+          (((context_ptr->pu_origin_x + src_pic->origin_x) +
+            (context_ptr->pu_origin_y + src_pic->origin_y) *
             src_pic->stride_y) << is16bit);
     int     block_width, block_height, rows, cols;
 
@@ -417,7 +417,7 @@ void search_palette_luma(PictureControlSet *pcs_ptr, ModeDecisionContext *contex
 
     int count_buf[1 << 12]; // Maximum (1 << 12) color levels.
 
-    unsigned bit_depth = picture_control_set_ptr->parent_pcs_ptr->sequence_control_set_ptr->encoder_bit_depth;
+    unsigned bit_depth = pcs_ptr->parent_pcs_ptr->scs_ptr->encoder_bit_depth;
     if (is16bit)
         colors = av1_count_colors_highbd((uint16_t *)src, src_stride, rows, cols,
             bit_depth, count_buf);

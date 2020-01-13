@@ -5154,8 +5154,8 @@ EbErrorType av1_inter_prediction(
             const int       ssy         = plane ? 1 : 0;
             const BlockSize plane_bsize = get_plane_block_size(blk_geom->bsize, ssx, ssy);
             //av1_build_interintra_predictors_sbp
-            uint8_t    topNeighArray[(64 * 2 + 1) << is16bit];
-            uint8_t    leftNeighArray[(64 * 2 + 1) << is16bit];
+            uint8_t    topNeighArray[(64 * 2 + 1) << 1];
+            uint8_t    leftNeighArray[(64 * 2 + 1) << 1];
 
             uint32_t blk_originx_uv = (pu_origin_x >> 3 << 3) >> 1;
             uint32_t blk_originy_uv = (pu_origin_y >> 3 << 3) >> 1;
@@ -5170,12 +5170,12 @@ EbErrorType av1_inter_prediction(
 
                 if (pu_origin_y != 0)
                     memcpy(topNeighArray + (1 << is16bit),
-                           luma_recon_neighbor_array->top_array + (pu_origin_x << is16bit),
+                           luma_recon_neighbor_array->top_array + ((uint64_t)pu_origin_x << is16bit),
                            blk_geom->bwidth * 2 << is16bit);
 
                 if (pu_origin_x != 0)
                     memcpy(leftNeighArray + (1 << is16bit),
-                           luma_recon_neighbor_array->left_array + (pu_origin_y << is16bit),
+                           luma_recon_neighbor_array->left_array + ((uint64_t)pu_origin_y << is16bit),
                            blk_geom->bheight * 2 << is16bit);
 
                 if (pu_origin_y != 0 && pu_origin_x != 0)
@@ -5195,12 +5195,12 @@ EbErrorType av1_inter_prediction(
 
                 if (blk_originy_uv != 0)
                     memcpy(topNeighArray + (1 << is16bit),
-                           cb_recon_neighbor_array->top_array + (blk_originx_uv << is16bit),
+                           cb_recon_neighbor_array->top_array + ((uint64_t)blk_originx_uv << is16bit),
                            blk_geom->bwidth_uv * 2 << is16bit);
 
                 if (blk_originx_uv != 0)
                     memcpy(leftNeighArray + (1 << is16bit),
-                           cb_recon_neighbor_array->left_array + (blk_originy_uv << is16bit),
+                           cb_recon_neighbor_array->left_array + ((uint64_t)blk_originy_uv << is16bit),
                            blk_geom->bheight_uv * 2 << is16bit);
 
                 if (blk_originy_uv != 0 && blk_originx_uv != 0)
@@ -5218,12 +5218,12 @@ EbErrorType av1_inter_prediction(
 
                 if (blk_originy_uv != 0)
                     memcpy(topNeighArray + (1 << is16bit),
-                           cr_recon_neighbor_array->top_array + (blk_originx_uv << is16bit),
+                           cr_recon_neighbor_array->top_array + ((uint64_t)blk_originx_uv << is16bit),
                            blk_geom->bwidth_uv * 2 << is16bit);
 
                 if (blk_originx_uv != 0)
                     memcpy(leftNeighArray + (1 << is16bit),
-                           cr_recon_neighbor_array->left_array + (blk_originy_uv << is16bit),
+                           cr_recon_neighbor_array->left_array + ((uint64_t)blk_originy_uv << is16bit),
                            blk_geom->bheight_uv * 2 << is16bit);
 
                 if (blk_originy_uv != 0 && blk_originx_uv != 0)
@@ -5332,8 +5332,8 @@ EbErrorType av1_inter_prediction(
     if (motion_mode == OBMC_CAUSAL) {
         uint8_t *tmp_obmc_bufs[2];
 
-        DECLARE_ALIGNED(16, uint8_t, obmc_buff_0[2 * MAX_MB_PLANE * MAX_SB_SQUARE << is16bit]);
-        DECLARE_ALIGNED(16, uint8_t, obmc_buff_1[2 * MAX_MB_PLANE * MAX_SB_SQUARE << is16bit]);
+        DECLARE_ALIGNED(16, uint8_t, obmc_buff_0[2 * MAX_MB_PLANE * MAX_SB_SQUARE << 1]);
+        DECLARE_ALIGNED(16, uint8_t, obmc_buff_1[2 * MAX_MB_PLANE * MAX_SB_SQUARE << 1]);
         tmp_obmc_bufs[0] = obmc_buff_0;
         tmp_obmc_bufs[1] = obmc_buff_1;
 

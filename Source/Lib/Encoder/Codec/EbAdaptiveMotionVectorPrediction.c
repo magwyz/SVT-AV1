@@ -1644,16 +1644,21 @@ void update_mi_map(struct ModeDecisionContext *context_ptr, BlkStruct *blk_ptr,
                 mi_ptr[mi_x + mi_y * mi_stride].mbmi.block_mi.partition =
                     from_shape_to_part[blk_geom->shape]; // blk_ptr->part;
             }
-            if (blk_geom->has_uv && context_ptr->chroma_level <= CHROMA_MODE_1)
-                mi_ptr[mi_x + mi_y * mi_stride].mbmi.block_mi.skip =
-                    (blk_ptr->txb_array[0].y_has_coeff == 0 &&
-                     blk_ptr->txb_array[0].v_has_coeff == 0 &&
-                     blk_ptr->txb_array[0].u_has_coeff == 0)
-                        ? EB_TRUE
-                        : EB_FALSE;
-            else
-                mi_ptr[mi_x + mi_y * mi_stride].mbmi.block_mi.skip =
-                    (blk_ptr->txb_array[0].y_has_coeff == 0) ? EB_TRUE : EB_FALSE;
+
+            if (blk_ptr->prediction_unit_array->ref_frame_type == 0)
+                mi_ptr[mi_x + mi_y * mi_stride].mbmi.block_mi.skip = EB_TRUE;
+            else {
+                if (blk_geom->has_uv && context_ptr->chroma_level <= CHROMA_MODE_1)
+                    mi_ptr[mi_x + mi_y * mi_stride].mbmi.block_mi.skip =
+                        (blk_ptr->txb_array[0].y_has_coeff == 0 &&
+                         blk_ptr->txb_array[0].v_has_coeff == 0 &&
+                         blk_ptr->txb_array[0].u_has_coeff == 0)
+                            ? EB_TRUE
+                            : EB_FALSE;
+                else
+                    mi_ptr[mi_x + mi_y * mi_stride].mbmi.block_mi.skip =
+                        (blk_ptr->txb_array[0].y_has_coeff == 0) ? EB_TRUE : EB_FALSE;
+            }
 
             mi_ptr[mi_x + mi_y * mi_stride].mbmi.block_mi.interp_filters = blk_ptr->interp_filters;
             mi_ptr[mi_x + mi_y * mi_stride].mbmi.comp_group_idx          = blk_ptr->comp_group_idx;
